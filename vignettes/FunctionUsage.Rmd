@@ -1,0 +1,219 @@
+---
+title: "Usage of Function"
+author: "Hanlu Zhang"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Usage of Function}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+## Overview
+
+__PageRank__ is an R package designed to facilitate the implementation of three different PageRank algorithms. The package was developed as part of the 'Statistical Computing' course.
+
+The package provides four functions. The first function is _PromC_, which calculates probability matrix in Rcpp. The second function is _pagerank_. It calculates the pagerank of the nodes in directed unweighted graph. The third function is _itemrank_. It calculates the pagerank of the nodes in directed weighted graph, where the rank called itemrank. The fourth function is _personpagerank_. It calculates the rank values from a root node with outdegree to other nodes in a bipartite graph. 
+
+## Introduction of PageRank
+
+PageRank is Google's proprietary algorithm for measuring the importance of a particular web page relative to other pages in the search engine's index. Invented by Larry Page and Sergey Brin in the late 1990s, PageRank implements the concept of link value as a ranking factor.
+
+PageRank allows links to "vote". A page's "votes" are determined by the importance of all the pages linking to it, and a hyperlink to a page is equivalent to a vote for that page. A page's PageRank is obtained by a recursive algorithm from the importance of all the pages linked to it (incoming pages). A page with more incoming links will have a higher rank, on the other hand if a page does not have any incoming pages, then it has no rank. In a nutshell, a page that is linked to from many quality pages must still be a quality page.
+
+The calculation of PageRank is based on the following two basic assumptions, one is the quantity assumption, that is, if a page node receives a greater number of incoming links from other web pages pointing to it, then the more important this page is; the second is the quality assumption, that is, the incoming links pointing to page A are of different qualities, and a high quality page will pass more weight through the link to the other pages, so the more the higher the quality of the page pointing to page A, the more important the page A is. So the more quality pages point to page A, the more important page A is.
+
+
+
+## Introduction of dataset _email_
+
+A dataset of the email information of Hillary Clinton and other politicians in the Emailgate scandal. It includes five columns: recipient, sender, recipient ID, sender ID and frequency. The last three columns of the dataset can be used to calculate the pagerank value of the politicians.
+
+```{r}
+library(SA23204183)
+data(email)
+head(email)
+```
+
+## Introduction of _PromC_
+
+To calculate the probability matrix, _PromC_ is a Rcpp function. 
+The differences between the R function and the _PromC_ are as follows.
+```{r, echo=FALSE}
+pages <- data.frame(
+  from = c(1, 1, 2, 3),
+  to = c(2, 3, 3, 1),
+  weight = c(1, 1, 1, 1)
+)
+
+n <- max(apply(pages,2,max))
+A <- matrix(0,n,n)
+for(i in 1 : nrow(pages)){
+    A[pages[i, 2], pages[i, 1]] <- 1
+}
+adjM = A
+```
+
+```{r}
+library(microbenchmark)
+promR = function(adjM, d){
+  cs <- colSums(adjM)
+  cs[cs==0] <- 1
+  n <- nrow(adjM)
+  delta <- (1-d)/n
+  P <- matrix(NA, nrow(adjM), ncol(adjM))
+  for (i in 1:n){
+    P[i,] <- delta + d * adjM[i,]/cs
+  }
+  return(P)
+}
+
+tm1 <- microbenchmark(
+  promC = PromC(adjM, d = 0.85),
+  promR = promR(adjM, d = 0.85)
+)
+knitr::kable(summary(tm1)[,c(1,3,5,6)])
+```
+
+The for loop in R is inefficient compared to the C++ function.
+
+
+
+## Introduction of _pagerank_
+
+The source R code for _pagerank_ is as follows:
+```{r, eval=FALSE}
+pagerank = function(pages, d = 1){
+  n <- max(apply(pages[,c(1,2)],2,max))
+  A <- matrix(0,n,n)
+  for(i in 1 : nrow(pages)){
+    if (pages[i, 3] != 1) {
+      print('Error: pagerank() is a function for weight = 1.
+            Please use function itemrank() for Weight != 1')
+    } else {
+      A[pages[i, 2], pages[i, 1]] <- 1
+    }
+  }
+  adjM = A
+  
+  proM = PromC(adjM, d)
+  
+  eigenMatrix <- function(proM){
+    n <- nrow(proM)
+    x <- Re(eigen(proM)$vectors[,1])
+    return(x/sum(x))
+  }
+  rank = eigenMatrix(proM)
+  
+  return(rank)
+}
+```
+
+The the R code includes three steps: computing the adjacency matrix, transition probability matrix, and solving for eigenvectors to calculate rank values.
+
+```{r}
+library(igraph)
+# prepare the data
+edges <- data.frame(
+  from = c(1, 1, 2, 3),
+  to = c(2, 3, 3, 1),
+  weight = c(1, 1, 1, 1)
+)
+graph <- graph_from_data_frame(edges, directed = TRUE, vertices = NULL)
+E(graph)$weight <- edges$weight
+# calculate
+r1.0 <- page_rank(graph, weights = NA)$vector
+r1.1 = pagerank(edges, d = 0.85)
+print(r1.0)
+print(r1.1)
+# compare the effiency
+tm2 <- microbenchmark(
+  r1.0 = page_rank(graph, weights = NA),
+  r1.1 = pagerank(edges, d = 0.85)
+)
+knitr::kable(summary(tm2)[,c(1,3,5,6)])
+```
+The results are exactly the same, however, _pagerank_ is slightly less efficient than _page_rank_. It is caused by the data types (called _graph_) and algorithms of the _page_rank_.
+
+
+## Introduction of _itemrank_
+
+The source R code for _itemrank_ is as follows:
+```{r}
+itemrank = function(pages, d = 1){
+  n <- max(apply(pages[,c(1,2)],2,max))
+  A <- matrix(0,n,n)
+  for(i in 1 : nrow(pages)){
+    A[pages[i, 2], pages[i, 1]] <- pages[i, 3]
+  }
+  if(all(pages[, 3]==1)){
+    print('Note: All weight = 1, but itemrank() is a function for Weight != 1.
+          A better choice is function pagerank().')
+  }
+  adjM = A
+  
+  proM = PromC(adjM, d)
+  
+  eigenMatrix <- function(proM){
+    n <- nrow(proM)
+    x <- Re(eigen(proM)$vectors[,1])
+    return(x/sum(x))
+  }
+  rank = eigenMatrix(proM)
+  
+  return(rank)
+}
+```
+
+Use _itemrank_ to calculate the rank of all nodes in the email dataset.
+```{r}
+ir = itemrank(email[,c(3,4,5)], d = 0.85)
+head(ir)
+```
+
+
+## Introduction of _personpagerank_
+
+The source R code for _personpagerank_ is as follows:
+```{r}
+personpagerank <- function(pages, d = 1, root, is_using_out = FALSE) {
+  n <- max(apply(pages[,c(1,2)],2,max))
+  nodes = c(1:n)
+  A <- matrix(0,n,n)
+  for(i in 1 : nrow(pages)){
+    A[pages[i, 2], pages[i, 1]] <- pages[i, 3]
+  }
+  adjM = A
+  if(is_using_out){
+    degree <- function(adjM, nodes) {
+      degrees = numeric(max(pages))
+      for (i in unique(pages[,1])) {
+        degrees[i] <- sum(adjM[ ,i])
+      }
+      for (i in unique(pages[,2])) {
+        degrees[i] <- 10e6
+      }
+      return(degrees)
+    }
+    degrees <- 1/degree(adjM, nodes)
+    adjM <- t(t(adjM) * degrees) 
+  }
+  matrix <- adjM
+  
+  r0 <- matrix(ifelse(nodes == root, 1, 0), nrow = length(nodes), ncol = 1)
+  n <- nrow(matrix)
+  A <- diag(n) - d * matrix
+  b <- (1 - d) * r0
+  r <- solve(A, b)
+  rank <- vector()
+  for (j in 1:n) {
+    rank[nodes[j]] <- r[j, 1]
+  }
+  return(rank)
+}
+```
+
+Use _personpagerank_ to calculate the rank of the node1 in the email dataset.
+```{r}
+ppr = personpagerank(email[,c(3,4,5)], d = 0.85, root = 1, is_using_out = FALSE)
+head(ppr)
+```

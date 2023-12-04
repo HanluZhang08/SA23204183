@@ -1,0 +1,2132 @@
+---
+title: "StatComp Homework"
+author: "Hanlu Zhang"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{StatComp Homework}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# HW0
+
+##  作业内容与思路
+
+作业内容：使用**Knit**生成至少3个例子，每个例子应当图（表）文并茂。最好还有数学公式。
+
+思路：选择四个统计学方法为本次作业的例子，由易到难分别是相关系数、两样本t检验、回归分析、树模型。这些例子既能以公式的形式解释数学原理，也能通过精致的图表来展示结果。使用的数据集为**R**自带的**mpg**数据集。
+
+数据介绍：**mpg**数据集共有234行11列，每一个变量的含义及数据类型如表1所示。在本次作业中，我们只选择五个数值型变量进行分析。
+
+```{r, include=FALSE}
+library(ggplot2)
+library(rpart)
+library(rpart.plot)
+```
+
+```{r}
+data(mpg)
+mydata = mpg[,c('displ','year','cyl','cty','hwy')]
+summary(mydata)
+```
+
+```{=tex}
+\begin{table}[ht]
+\caption{mpg数据集变量含义}
+\centering
+\begin{tabular}{ccc}
+  \hline
+Variables & Explanation & Type \\
+  \hline
+manufacturer & 制造商 & chr \\
+model & 汽车型号 & chr \\
+displ & 发动机排量 & num \\
+year & 生产日期 & int \\
+cyl & 气缸数量 & int \\
+trans & 汽车的变速器类型 & chr \\
+drv & 驱动类型 & chr \\
+cty & 城市燃油率 & int \\
+hwy & 高速燃油率 & int \\
+fl & 汽油类型 & chr \\
+class & 汽车类型 & chr \\
+   \hline
+\end{tabular}
+\end{table}
+```
+
+## 汽车变量的相关性分析
+
+我们计算各指标的Pearson相关系数。指标$X$和指标$Y$的Pearson相关系数的计算公式如下：
+$$\rho=\dfrac{Cov(X,Y)}{\sqrt{Var(X)Var(Y)}}.$$
+
+```{r}
+cor(mydata, method = c("pearson"))
+```
+
+cty和hwy的相关系数最高。
+说明城市燃油率和高速燃油率之间高度线性相关。
+
+## 汽车变量的假设检验
+
+**mpg**数据集包含了1999年的数据与2008年的数据。我们以年份为分组指标，用两样本t检验的方法比较两年的发动机排量是否有显著差异。记两组样本分别为$x_1,x_2,\cdots,x_m$，来自正态总体$N(\mu_1,\sigma_1^2)$，$y_1,y_2,\cdots,y_n$，来自正态总体$N(\mu_2,\sigma_2^2)$。t统计量的计算公式如下：
+$$t = \dfrac{\bar x-\bar y}{s_w\sqrt{\dfrac{1}{m}+\dfrac{1}{n}}}.$$
+
+其中，$s_w=(\dfrac{1}{m+n-2}(\sum\limits_{i=1}^m(x_i-\bar x)^2+\sum\limits_{i=1}^n(y_i-\bar y)^2))^{\frac{1}{2}}$.
+
+t检验的P值\<0.05，认为1999年的发动机排量与2008年的有显著差异。由计算的均值可知，2008年的发动机排量更高。
+
+```{r}
+mydata$year <- as.factor(mydata$year)
+t.test(displ~year, mydata, var.equal=T)
+```
+
+## 汽车变量的线性回归分析
+
+我们用多元线性模型，探究发动机排量和气缸数量对高速燃油率的影响。以displ和cyl为自变量，hwy为响应变量，拟合如下线性模型：
+$$hwy = \beta_0+\beta_1·displ+\beta_2·cyl.$$
+
+```{r}
+lm_model = lm(hwy~displ+cyl, mydata)
+par(mfrow=c(2,2), mar = c(2, 2, 2, 2))
+plot(lm_model)
+```
+
+拟合的线性模型结果为$hwy = 38.2162-1.9599·displ-1.3537·cyl$。模型调整后的$R^2$为`r summary(lm_model)$adj.r.squared`，从残差图可以看出，模型达到了较好的拟合效果。
+
+## 汽车变量的决策树模型
+
+我们选用决策树模型探究displ、year、cyl、cty四个变量中，哪个变量对hwy的影响最大。决策树的算法是以特征（变量）的信息增益为基础的。给定数据集$D$和特征$A$，信息增益$g(D,A)$的计算公式如下：
+$$g(D,A) = H(D) - H(D|A).$$
+
+其中，$H(D)$是数据集$D$的经验熵，$H(D)=-\sum\limits_{k=1}^K\dfrac{|C_k|}{|D|}\log_2\dfrac{|C_k|}{|D|}$。$H(D|A)$是特征$A$对数据集$D$的经验条件熵，$H(D|A)=\sum\limits_{i=1}^n\dfrac{|D_i|}{|D|}H(D_i)$。
+
+```{r}
+tree_model = rpart(hwy~., data = mydata)
+rpart.plot(tree_model)
+```
+
+根据信息增益结果，绘制树状图。由图像可以看出，模型中最重要的指标是城市燃油率（cty），它对高速燃油率影响最大。
+
+
+# HW1
+
+## 第一题
+
+*问题描述：*标准拉普拉斯分布的密度函数是$f(x)=\frac{1}{2}e^{-|x|},~x\in R$。用inverse transform method生成1000个服从该分布的随机样本，再用一种方法来比较生成的样本和目标分布。
+
+*思路：*
+（1）inverse transform method生成随机样本：计算累计密度函数，求逆分布函数，生成$U(0,1)$分布随机数，将随机数代入逆分布函数；
+（2）生成目标分布：采用**R**中的`rlaplace()`函数；
+（3）用直方图来比较生成样本和目标分布。
+
+
+首先计算标准拉普拉斯分布的累计密度函数，由累计密度函数的定义：
+$$F(x) = \int _{-\infty}^x f(u)du = \int _{-\infty}^x \dfrac{1}{2}e^{-|u|} du, $$
+$$when~x>0,~F(x) = \int _{-\infty}^0 \dfrac{1}{2}e^{u} du + \int _{0}^x \dfrac{1}{2}e^{-u} du = 1-\dfrac{1}{2}e^{-x}, $$
+$$when~x\leq 0,~F(x) = \int _{-\infty}^x \dfrac{1}{2}e^{u} du = \dfrac{1}{2}e^{x}. $$
+因此，$F(x) = \dfrac{1}{2}[1+sign(x)(1-e^{-|x|})]$，其中，$sign(x)$是符号函数，$x>0$时，$sign(x)=1$；$x=0$时，$sign(x)=0$；$x<0$时，$sign(x)=-1$；。
+
+令$u=F(x)$，解得标准拉普拉斯分布的逆分布函数为：
+$$F^{-1}(u)=sign(\dfrac{1}{2}-u)\ln (1-2|u-\dfrac{1}{2}|).$$
+本题的**R**代码如下：
+```{r}
+set.seed(1)
+n = 1000
+u = runif(n)
+generate_sample = sign(0.5-u)*log(1-2*abs(u-0.5))
+```
+
+```{r}
+# 绘制图像
+hist(generate_sample, breaks=30, xlim=c(-10,10), prob=TRUE, 
+     col=rgb(1,0,0,0.5), xlab="sample", ylab="Density",
+     main = "Histogram of standard laplace")
+y = seq(-10, 10, 0.1)
+lines(y, 0.5*exp(-abs(y)))
+```
+
+图像上红色部分是用逆变换法生成的样本的直方图，黑色曲线是目标分布的概率密度曲线。通过比较可以看出，逆变换法生成的样本分布很接近目标分布。然而，通过`hist`函数的`main`参数的`expression`生成直方图标题中的公式时，`e^{-|x|}`语法报错，尚未得到解决，因此直方图为文字标题。
+
+*参考资料：*
+（1）https://search.r-project.org/CRAN/refmans/VGAM/html/laplaceUC.html
+
+## 第二题
+
+*问题描述：*写一个函数，用acceptance-rejection method来生成服从分布$Beta(a,b)$的$n$个随机样本。生成服从分布$Beta(3,2)$的1000个随机样本。画出生成的样本的直方图，并在上面叠加理论$Beta(3,2)$的密度。
+
+*思路：*
+（1）先找到$Beta(a,b)$的概率密度函数的包络函数$g(t)$，推导随机变量$x$被接受的条件；
+（2）多次循环，得到指定size的$Beta(a,b)$样本。
+
+$Beta(a,b)$的概率密度函数为：
+$$f(x) = \dfrac{\Gamma(a+b)}{\Gamma(a)\Gamma(b)}x^{a-1}(1-x)^{b-1},~0<x<1.$$
+其中，$\Gamma(x+1)=x!$。
+
+令$g(x)$为均匀分布$U(0,1)$的概率密度函数，则$\forall x\in(0,1),~f(x)/g(x)\leq \dfrac{\Gamma(a)\Gamma(b)}{\Gamma(a+b)}$，因此$f(x)/g(x)$的上界$c=\dfrac{\Gamma(a)\Gamma(b)}{\Gamma(a+b)}$。那么，来自$g(x)$的随机变量$x$被接受的条件是：
+$$\dfrac{f(x)}{cg(x)}=\dfrac{\dfrac{\Gamma(a+b)}{\Gamma(a)\Gamma(b)}x^{a-1}(1-x)^{b-1}}{\dfrac{\Gamma(a+b)}{\Gamma(a)\Gamma(b)}·1}=x^{a-1}(1-x)^{b-1}>u,$$
+其中，$u$为均匀分布$U(0,1)$的随机变量。
+
+用acceptance-rejection method来生成服从分布$Beta(a,b)$的$n$个随机样本的**R**函数如下，其中$a,b$分别为$Beta(a,b)$的参数，`n`为样本size：
+```{r}
+set.seed(1)
+
+generate_beta = function(a, b, n){
+  k = 0 # counter for accept
+  j = 0 # iterations
+  beta_sample = numeric(n)
+  while (k < n) {
+    u = runif(1) # upper bound
+    j = j + 1
+    x = runif(1) # r.v. from g
+    if (x^(a-1)*(1-x)^(b-1)>u){
+      # accept x
+      k = k + 1
+      beta_sample[k] = x
+    }
+  }
+  return(beta_sample)
+}
+```
+
+用自定义函数`generate_beta`生成服从分布$Beta(3,2)$的1000个随机样本，画出样本直方图，并在图上叠加理论$Beta(3,2)$的密度曲线。
+```{r}
+# 生成
+a = 3
+b = 2
+Beta_Sample = generate_beta(a,b,1000)
+
+# 画图
+hist(Beta_Sample, breaks=30, xlim=c(0,1), prob=TRUE, col=rgb(1,0,0,0.5), xlab="sample", 
+     ylab="Density", main = "Histogram of Beta(3,2)")
+y = seq(0, 1, 0.01)
+lines( y, factorial(a+b-1)/(factorial(a-1)*factorial(b-1)) * y^(a-1) * (1-y)^(b-1) )
+```
+
+图像上红色部分是用acceptance-rejection method生成的$Beta(3,2)$样本的直方图，随机样本的size为1000。此时，生成的样本分布很接近目标分布，但峰值还略有差别，真实分布的峰值更靠右。
+
+## 第三题
+
+*问题描述：* rescaled Epanechnikov kernel 是一个对称密度函数：$f_e(x) = \dfrac{3}{4}(1-x^2),~|x|\leq 1$。Devroye & Gyorfi给出了如下算法来模拟这一分布：生成服从均匀分布$U(-1,1)$的三类独立同分布样本，分别记作$U_1,~U_2,~U_3$；如果$|U_3|\geq|U_2|$并且$|U_3|\geq|U_1|$，产生$U_2$，否则产生$U_3$。写出一个函数，生成来自$f_e$的随机变量，并绘制大型模拟随机样本的密度直方图。
+
+*思路：*
+（1）以样本size作为函数的循环参数，以比较式作为循环条件，产生样本；
+（2）绘制样本的直方图。
+
+用Devroye & Gyorfi给出的算法生成服从分布$f_e(x)$的样本的**R**函数如下，其中，`n`为样本size：
+```{r}
+set.seed(1)
+
+generate_fe = function(n){
+  k = 0 # counter for accept
+  j = 0 # iterations
+  fe_sample = numeric(n)
+  while (k < n) {
+    u1 = runif(1, min = -1, max = 1)
+    u2 = runif(1, -1, 1)
+    u3 = runif(1, -1, 1)
+    k = k + 1
+    j = j + 1
+    if ( abs(u3)>=abs(u2) & abs(u3)>=abs(u1) ){
+      # accept u2
+      fe_sample[k] = u2
+    }else{
+      fe_sample[k] = u3
+    }
+  }
+  return(fe_sample)
+}
+```
+
+用自定义函数`generate_fe`生成服从分布$f_e(x)$的10000个随机样本（认为10000是large size），并画出样本直方图。
+```{r}
+fe_Sample = generate_fe(10000)
+
+hist(fe_Sample, breaks=30, prob=TRUE, col=rgb(1,0,0,0.5), xlab="sample", 
+     ylab="Density", main = "Histogram of rescaled Epanechnikov kernel")
+```
+
+图像上红色部分是用Devroye & Gyorfi给出的算法生成的rescaled Epanechnikov kernel样本的直方图，随机样本的size为10000。从直方图可以看出，该密度函数是对称的。
+
+## 第四题
+
+*问题描述：* 证明第三题中的算法可以生成服从$f_e(x)$概率密度函数的随机数。
+
+*思路：*要证明生成的随机数的概率密度函数是rescaled Epanechnikov kernel，只需证生成的随机数的分布函数与$f_e(x)$的分布函数相同即可。
+
+首先计算$f_e(x)$的分布函数：
+$$F_e(x) = \int _{-1}^x\dfrac{3}{4}(1-u^2)du = -\dfrac{1}{4}x^3+\dfrac{3}{4}x+\dfrac{1}{2},~|x|<1.$$
+接下来，计算生成的随机数$U$的分布函数：
+$$F_U(k) = P(U\leq k)$$
+$$= P(U_2\leq k|U=U_2)P(U=U_2)+P(U_3\leq k|U=U_3)P(U=U_3)$$
+$$= P(U_2\leq k,~U=U_2)+P(U_3\leq k,~U=U_3).$$
+此外，注意到$U_1,~U_2,~U_3$独立同分布，因此有：
+$$f(u_1,u_2,u_3)=f(u_1)f(u_2)f(u_3)=\dfrac{1}{8}.$$
+
+
+分情况讨论，先考虑$-1<k<0$：
+
+（1）$U=U_2$的条件是：$|U_3|\geq|U_2|$并且$|U_3|\geq|U_1|$，此时$-1<U_2<k<0$。若$U_3>0$，则有$-U_3\leq U_1 \leq U_3$；若$U_3\leq 0$，则有$U_3\leq U_1 \leq -U_3$。因此：
+$$P(U_2\leq k,~U=U_2)=\int_{-1}^k \int_{-U_2}^1 \int_{-U_3}^{U_3}f(u_1)f(u_2)f(u_3)du_1du_3du_2 $$
+$$+ \int_{-1}^k \int_{-1}^{U_2} \int_{U_3}^{-U_3}f(u_1)f(u_2)f(u_3)du_1du_3du_2$$
+$$=-\dfrac{1}{12}k^3+\dfrac{1}{4}k+\dfrac{1}{6}.$$
+（2）$U=U_3$的条件是：$|U_3|<|U_2|$并且$|U_3|<|U_1|$，或$|U_3|\geq|U_2|$并且$|U_3|<|U_1|$，或$|U_3|<|U_2|$并且$|U_3|\geq|U_1|$。此时$-1<U_3<k<0$。注意到$|U_1|,~|U_2|,~|U_3|$独立且均服从均匀分布$U(0,1)$。在之后的积分式中，将绝对值变换后的变量、密度函数用$^*$标记。
+$$P(U_2\leq k,~U=U_2)=\int_{-1}^k \int_{-U_3}^1 \int_{-U_3}^{1}f^*(u_1^*)f^*(u_2^*)f(u_3)du_1^*du_2^*du_3$$
+$$+\int_{-1}^k \int_{0}^{-U_3} \int_{-U_3}^{1}f^*(u_1^*)f^*(u_2^*)f(u_3)du_1^*du_2^*du_3$$
+$$+\int_{-1}^k \int_{-U_3}^{1} \int_{0}^{-U_3} f^*(u_1^*)f^*(u_2^*)f(u_3)du_1^*du_2^*du_3$$
+$$=-\dfrac{1}{6}k^3+\dfrac{1}{2}k+\dfrac{1}{3}.$$
+其中，$f^*(u_1^*)f^*(u_2^*)f(u_3)=\dfrac{1}{2}$.
+
+因此，当$-1<k<0$时，
+$$F_U(k) = (-\dfrac{1}{12}k^3+\dfrac{1}{4}k+\dfrac{1}{6})+(-\dfrac{1}{6}k^3+\dfrac{1}{2}k+\dfrac{1}{3})=-\dfrac{1}{4}k^3+\dfrac{3}{4}k+\dfrac{1}{2}.$$
+同理，当$0\leq k<1$时，也有
+$$F_U(k) =-\dfrac{1}{4}k^3+\dfrac{3}{4}k+\dfrac{1}{2}.$$
+综上所述，我们证得了$F_e(x)=F_U(x),~|x|<1$，所以第三题中的算法可以生成服从$f_e(x)$概率密度函数的随机数。
+
+## 复现sample函数
+
+*问题描述：* 用逆变换法复现函数`sample`在参数`replace=TRUE`时的功能。
+
+*思路：*（1）函数参数应当包含抽样总体`x`，样本size`n`，抽样概率`prob`，以及随机种子`seed`；（2）`sample`函数在参数`replace=TRUE`时是有放回的随机抽样，相当于从离散总体中生成随机数，逆变换法步骤为：a.生成均匀分布随机数$u\sim U(0,1)$，b.输入随机变量$X$的分布$F$，如果$F(x_{i-1})\leq u<F(x_{i})$，则输出$X=x_i$。
+
+
+**R**函数的参数含义分别为：`x`是抽样总体，需要使用者输入一个长度$\geq 1$的向量；参数`n`是样本size，默认为抽样总体的总数；参数`prob`是抽样概率，默认为等概率。
+```{r}
+my_sample = function(x, n = length(x), prob = rep(1/length(x), length(x))){
+  cp = cumsum(prob)
+  u = runif(n)
+  random_sample = x[findInterval(u,cp)+1]
+  return(random_sample)
+}
+```
+
+下面是用`my_sample`函数生成随机数的例子，与`sample`函数的结果进行比较。
+
+**例1：在0-1总体中等概率抽样10个样本。**
+指定`my_sample`和`sample`两个函数的抽样总体和样本size。抽样概率是默认值$0.5,0.5$，是有放回等概率抽样。
+```{r}
+set.seed(1)
+x = c(0,1)
+n = 10
+s = sample(x, n, replace = TRUE)
+ms = my_sample(x, n)
+print(s)
+print(ms)
+```
+
+
+**例2：对英文字母进行重排。**
+指定`my_sample`和`sample`两个函数的抽样总体为`letters`。样本size是默认值，为抽样总体的总数。抽样概率是默认值，每一个字母抽中的概率是$1/26$，是有放回等概率抽样。
+```{r}
+set.seed(2)
+x = letters
+s = sample(x,replace = TRUE)
+ms = my_sample(x)
+print(s)
+print(ms)
+```
+
+**例3：在1、2、3总体中不等概率抽样100个样本。**
+指定`my_sample`和`sample`两个函数的抽样总体、样本size为100、抽样概率为$0.2, 0.3, 0.5$，是有放回不等概率抽样。
+```{r}
+set.seed(3)
+x = c(1:3)
+n = 100
+prob = c(0.2, 0.3, 0.5)
+s = sample(x, n, prob, replace = TRUE)
+ms = my_sample(x, n, prob)
+count_sample <- as.vector(table(s))
+count_my_sample <- as.vector(table(ms))
+print(count_sample)
+print(count_my_sample)
+```
+
+从以上三个例子的结果可以看出，`my_sample`函数能够实现`sample`在参数`replace=TRUE`时的功能。虽然结果有细微差别，但当样本size足够大时，抽样结果更加接近。
+
+
+# HW2
+
+## 第一题
+
+*问题描述：*（1）在Buffon’s niddle experiment中，找一个最优的$\dfrac{l}{d}=\rho$，使得$\hat \pi=\dfrac{2l}{d\hat p}$的渐近方差最小，其中$\hat p=\dfrac{m}{n}$（提示：使用$\delta$法，$m\sim B(n,p)$）。记最优的$\rho$为$\rho_{\min}$。（2）取三个不同的$\rho$值（$0\leq\rho\leq1$，包含$\rho_{\min}$），用MC方法比较计算出的$\hat \pi$的方差，以验证上一题的结论。（$n=10^6,~K=100$）
+
+
+*思路：*（1）用delta法写出$\hat \pi$的表达式，该表达式和$\rho$有关，再求最小值。（2）取$\rho_1=\rho_{\min}=1,\rho_2=0.8,\rho_3=0.5$，用MC方法生成$\hat \pi$，再计算方差。
+
+解：已知$m\sim B(n,p)$，$\hat \pi=\dfrac{2l}{d\hat p}=\dfrac{2ln}{dm}$。由delta法：
+$$Var(\hat \pi)=\dfrac{4\rho^2(1-p)}{np^3}.$$
+注意到$p=\dfrac{2\rho}{\pi}$，代入到上式：
+$$Var(\hat \pi)=\dfrac{4\rho^2(1-\dfrac{2\rho}{\pi})}{n(\dfrac{2\rho}{\pi})^3}=\dfrac{\pi^2}{n}(\dfrac{\pi}{2\rho}-1).$$
+由于$0\leq\rho\leq1$，因此$\rho=1$时$\hat \pi$的渐近方差最小。$\rho_{\min}=1$，$Var(\hat \pi)_{\min}=\dfrac{\pi^2(\pi-2)}{2n}.$
+
+分别取$\rho_1=1,\rho_2=0.8,\rho_3=0.5$，线段间距$d$设置为2，对应的针长$l$分别是$2,~1.6,~1$。$\hat \pi$的估计式为：
+$$\hat \pi= \dfrac{2l}{d}\dfrac{n}{I(\frac{l}{2}\sin(Y)>X)},$$
+其中，$Y\sim U(0,\pi/2)$，$X\sim U(0,d/2)$。用MC方法进行模拟，计算$\hat \pi$及其方差的代码如下：
+```{r eval = FALSE}
+n = 1e6
+K = 100
+l = c(2, 1.6, 1)
+d = 2
+pihat = data.frame(matrix(NA, K, 3))
+
+for (i in 1:3) {
+  for (j in 1:K){
+    set.seed(j)
+    X = runif(n,0,d/2)
+    Y = runif(n,0,pi/2)
+    pihat[j,i] = 2*l[i]/d/mean(l[i]/2*sin(Y)>X)
+  }
+}
+```
+
+```{r eval = FALSE}
+# 计算方差
+var = apply(pihat, 2, var)
+```
+
+当$\rho$分别为1, 0.8, 0.5时，$\hat \pi$的方差如表1所示。$\rho=1$时的方差最小，为$4.5\times 10^{-6}$，符合第一问的结论。
+```{=tex}
+\begin{table}[ht]
+\caption{不同$\rho$下$\hat \pi$的方差}
+\centering
+\begin{tabular}{cccc}
+  \hline
+$\rho$ & 1 & 0.8 & 0.5 \\
+  \hline
+$Var(\hat \pi)$ & 4.46e-06 & 7.89e-06 & 1.84e-05 \\
+   \hline
+\end{tabular}
+\end{table}
+```
+
+## 第二题
+
+*问题描述：*例5.7说明了求解蒙特卡洛积分的控制变量法：
+$$\theta = \int_0^1e^xdx.$$
+现考虑对偶变量法，计算$Cov(e^U,e^{1-U})$以及$Var(e^U+e^{1-U})$，其中$U\sim Uniform(0,1)$。与简单MC方法相比，对偶法能降低百分之多少的方差？
+
+*思路：*分别用简单MC方法和对偶变量法计算$\hat \theta$及其方差，并计算方差降低的百分比。
+
+解：在简单MC方法中，有$\theta = E[g(U)]$，其中$g(U)=e^U$，$U\sim U(0,1)$。
+考虑对偶变量，$e^{1-U}$与$e^U$负相关且同分布：
+$$Cov(e^U, e^{1-U}) = E[e^Ue^{1-U}]-E[e^U]E[e^{1-U}]$$
+$$ = e-(e-1)(e-1)$$
+$$ = -e^2+3e-1.$$
+将$Cov(e^U, e^{1-U})$代入到方差计算式中：
+$$Var(e^U+e^{1-U}) = Var(e^U) + Var(e^{1-U}) + 2Cov(e^U, e^{1-U})$$
+$$ = \dfrac{1}{2}(-e^2+4e-3)\times 2 + 2\times(-e^2+3e-1)$$
+$$ = -3e^2+10e-5.$$
+而$Var(e^U)=\dfrac{1}{2}(-e^2+4e-3)$，计算方差降低的百分比：
+$$\dfrac{Var(e^U)-\dfrac{1}{2}Var(e^U+e^{1-U})}{Var(e^U)}=\dfrac{\dfrac{1}{2}(-e^2+4e-3)-\dfrac{1}{2}(-3e^2+10e-5)}{\dfrac{1}{2}(-e^2+4e-3)}$$
+$$=\dfrac{(-e^2+4e-3)-(-3e^2+10e-5)}{-e^2+4e-3}$$
+$$=\dfrac{2e^2-6e+2}{-e^2+4e-3}$$
+$$\approx 0.9677.$$
+与简单MC方法相比，对偶法能降低约96.77%的方差。
+
+## 第三题
+
+*问题描述：*参考上一题，分别用对偶变量法和简单MC法估计$\theta$。计算使用对偶法带来的方差减少百分比的经验估计，将结果与上一题中的理论值进行比较。
+
+*思路：*首先生成0-1区间上均匀分布的随机数，计算$e^U$与$e^{1-U}$的值，分别用对偶变量法和简单MC法估计$\theta$。再计算两种方法的方差，以及方差降低的百分比。
+
+解：我们首先将对偶变量法和简单MC法的生成随机数机制写成函数`MC_anti`。然后进行100次模拟，每次生成10000个随机数，用于估计$\theta$。**R**代码如下：
+
+```{r}
+# 函数参数：生成的随机数数量，是否要用对偶变量法
+# 函数功能：如果要用对偶变量法，1/2的随机数要做变换；否则不用做变换，即简单MC法
+MC_anti = function(n, antithetic = TRUE){
+  u = runif(n/2, 0, 1)
+  if(!antithetic) v = runif(n/2, 0, 1) else
+    v = 1 - u 
+  u = c(u, v)
+  theta = mean(exp(u))
+  theta
+}
+
+# 开始计算theta及其方差
+K = 100
+n = 10000
+theta_simple = theta_anti = numeric(K)
+for (i in 1:K) {
+  set.seed(i)
+  theta_simple[i] = MC_anti(n, antithetic = FALSE)
+  theta_anti[i] = MC_anti(n, antithetic = TRUE)
+}
+var_simple = var(theta_simple)
+var_anti = var(theta_anti)
+print(var_simple)
+print(var_anti)
+print((var_simple-var_anti)/var_simple)
+```
+
+与简单MC方法相比，对偶法带来的方差减少的经验估计值为97.26%。该结果比上一题的理论值（96.77%）略高，这可能是由模拟的随机性所导致的。
+
+
+
+# HW3
+
+## 第一题
+
+*问题描述：*
+在Stratified Sampling问题中，记区间$I$被分割为$(a_i,b_i),~i=1,...k$，简单估计的方差为$Var(\hat{\theta^M})$，分层估计的方差为$Var(\hat{\theta^S})$，且
+$$Var(\hat{\theta^M}) = \dfrac{1}{Mk}\sum_{i=1}^k\sigma_i^2+\dfrac{1}{M}Var(\theta_I) = Var(\hat{\theta^S})+\dfrac{1}{M}Var(\theta_I).$$
+证明：若$g$是$(a,b)$上的连续函数，当$\forall i \in \{1,...k\},~b_i-a_i\rightarrow 0$，$Var(\hat{\theta^S})/Var(\hat{\theta^M})\rightarrow 0$.
+
+*思路：*
+按照$Var(\hat{\theta^M})$与$Var(\hat{\theta^S})$之间的关系式化简$Var(\hat{\theta^S})/Var(\hat{\theta^M})\rightarrow 0$，将问题转化为对$\dfrac{1}{Mk}\sum_{i=1}^k\sigma_i^2$的分析。再根据定义写出$\dfrac{1}{Mk}\sum_{i=1}^k\sigma_i^2$的表达式，将积分内部放大为与$u$无关的项，从而利用$b_i-a_i\rightarrow 0$的条件证明。
+
+
+*证明：*
+由$Var(\hat{\theta^M}) = \dfrac{1}{Mk}\sum_{i=1}^k\sigma_i^2+Var(\theta_I) = Var(\hat{\theta^S})+Var(\theta_I)$知，
+$$\dfrac{Var(\hat{\theta^S})}{Var(\hat{\theta^M})} = \dfrac{\frac{1}{Mk}\sum_{i=1}^k\sigma_i^2}{\frac{1}{Mk}\sum_{i=1}^k\sigma_i^2+Var(\theta_I)}$$
+$$= \dfrac{1}{1+\dfrac{\frac{1}{M}Var(\theta_I)}{\frac{1}{Mk}\sum_{i=1}^k\sigma_i^2}}$$
+$$= \dfrac{1}{1+\dfrac{Var(\theta_I)}{\frac{1}{k}\sum_{i=1}^k\sigma_i^2}}.$$
+由于$b_i-a_i\rightarrow 0$时，$\theta_i\rightarrow g(U)$。而$g$是连续函数，因此$Var(\theta_I)\rightarrow Var( g(U))<\infty$，所以接下来只需证$\frac{1}{k}\sum_{i=1}^k\sigma_i^2\rightarrow 0$即可。
+
+根据$\sigma_i^2$的定义，有：
+$$\frac{1}{k}\sum_{i=1}^k\sigma_i^2 = \frac{1}{k}\sum_{i=1}^k\int_{a_i}^{b_i}\dfrac{1}{b_i-a_i}(g(u)-\bar{g(u)})^2du$$
+记$\Delta g_i = g_{\max}(u)-g_{\min}(u),~u\in[a_i,b_i]$，显然有$(g(u)-\bar{g(u)})^2<(\Delta g_i)^2$。所以：
+$$\frac{1}{k}\sum_{i=1}^k\sigma_i^2 < \frac{1}{k}\sum_{i=1}^k\int_{a_i}^{b_i}\dfrac{1}{b_i-a_i}(\Delta g_i)^2du$$
+$$= \frac{1}{k}\sum_{i=1}^k(b_i-a_i)\dfrac{1}{b_i-a_i}(\Delta g_i)^2,$$
+$$\leq \frac{1}{k}\sum_{i=1}^k(b_i-a_i)\dfrac{1}{b_i-a_i}\max(\Delta g_i)^2,$$
+又由于$g(x)$是连续的，因此$b_i-a_i\rightarrow 0$时，$\max(\Delta g_i)^2\rightarrow 0$。从而有：
+$$\frac{1}{k}\sum_{i=1}^k\sigma_i^2 \rightarrow 0.$$
+至此，我们证得，当$b_i-a_i\rightarrow 0$时：
+$$\dfrac{Var(\hat{\theta^S})}{Var(\hat{\theta^M})} = \dfrac{\frac{1}{Mk}\sum_{i=1}^k\sigma_i^2}{\frac{1}{Mk}\sum_{i=1}^k\sigma_i^2+Var(\theta_I)}\rightarrow 0.$$
+
+
+## 第二题
+
+*问题描述：*
+找到以$(1,\infty)$为支撑并且“接近”$g(x)$的两个importance functions $f_1$和$f_2$，
+$$g(x)=\dfrac{x^2}{\sqrt{2\pi}}e^{-x^2/2},~x>1.$$
+其中哪个function能够在用importance sampling方法估计$\int_1^{\infty}g(x)dx$的时候有更小的方差？解释原因。
+
+*思路：*
+importance function是易于生成，并且与$g(x)$有较高的相关性（最好比值接近于常数）的密度函数。按照该思路构造$f$，在支撑集上，$f$与$g(x)$的比值越接近常数，其方差越小。
+
+*解：*
+以$(1,\infty)$为支撑的两个importance functions如下所示，它们在$(1,\infty)$上积分值为1，符合密度函数的定义：
+$$f_1(x) = e^{-(x-1)},~x>1,$$
+$$f_2(x) = \dfrac{1}{2}x^{-3/2 },~x>1.$$
+其中，$f_1(x)$在用importance sampling方法估计$\int_1^{\infty}g(x)dx$的时候有更小的方差。下面分别从理论和数值模拟两个方面进行说明：
+
+（1）
+理论推导：
+设$x$的概率密度函数为$f(x)$，则积分值
+$$\theta = \int_1^{\infty}g(x)dx = \int_1^{\infty}\dfrac{g(x)}{f(x)}f(x)dx = E[\dfrac{g(x)}{f(x)}],$$
+从$X$的分布中生成$X_1,...X_n$个独立随机变量，积分的MC估计值为：
+$$\hat \theta = \bar{g(X)} =\dfrac{1}{n}\sum_{i=1}^n\dfrac{g(x)}{f(x)}.$$
+由上式可知，$\dfrac{g(x)}{f(x)}$越接近常数，$\hat \theta$的方差越小。而$f_1(x) = e^{-(x-1)}$比$f_2(x) = \dfrac{1}{2}x^{-3/2 }$更满足这一点，因此$f_1$在用importance sampling方法估计$\int_1^{\infty}g(x)dx$的时候有更小的方差。
+
+如图所示，图(A)分别是$g(x)$，$f_1(x)$，$f_2(x)$在$(1,6)$上的图像。图(B)分别是$g(x)/f_1(x)$，$g(x)/f_2(x)$在$(1,6)$上的图像。从图(B)可以看出，$\dfrac{g(x)}{f_1(x)}$更接近常数。
+
+```{r echo = FALSE}
+x <- seq(1, 6, .01)
+g = x^2 / sqrt(2*pi) * exp(-x^2/2)
+f1 = exp(-(x-1))
+f2 = x^(-3/2) / 2
+
+#figure (a)
+plot(x, g, type = "l", ylab = "", ylim = c(0,2), lwd = 2, col=1, main='(A)')
+lines(x, f1, lty = 2, lwd = 2, col=2)
+lines(x, f2, lty = 3, lwd = 2, col=3)
+legend("topright", legend = c(expression(g(x)==x^2*e^{-x^2/2}/sqrt(2*pi)),
+                              expression(f[1](x)==e^{-(x-1)}),
+                              expression(f[2](x)==x^{-3/2} / 2)),
+       lty = 1:3, lwd = 2, inset = 0.02, col=1:3, cex = 0.8)
+
+#figure (b)
+plot(x, g/f1, type = "l", ylab = "",
+     ylim = c(0,5), lwd = 2, lty = 2, col=2, main='(B)')
+lines(x, g/f2, lty = 3, lwd = 2, col=3)
+legend("topright", legend = c(expression(f[1](x)==e^{-(x-1)}),
+                              expression(f[2](x)==x^{-3/2} / 2)),
+       lty = 2:6, lwd = 2, inset = 0.02, col=2:6, cex = 0.8)
+```
+
+
+（2）数值模拟：
+分别生成$10^6$个$g(x)/f_1(x)$与$g(x)/f_2(x)$，计算积分估计值及标准误。$f_1(x)$的标准误小于$f_2(x)$，为0.157。
+```{r, echo=FALSE}
+m <- 1e6
+set.seed(123)
+est <- sd <- numeric(2)
+u = runif(m)
+g <- function(x) {
+  x^2 / sqrt(2*pi) * exp(-x^2/2) * (x > 1)
+}
+f1 <- function(x) {exp(-(x-1))* (x > 1)}
+f2 <- function(x) {x^(-3/2) / 2* (x > 1)}
+
+#using f1
+x = 1 - log(1-u)
+fg <- g(x) / f1(x)
+est[1] <- mean(fg)
+sd[1] <- sd(fg)
+
+#using f2
+x = (1-u)^(-2)
+fg <- g(x) / f2(x)
+est[2] <- mean(fg)
+sd[2] <- sd(fg)
+```
+
+```{=tex}
+\begin{table}[ht]
+\centering
+\begin{tabular}{ccc}
+  \hline
+  & f1 & f2\\
+  \hline
+est & 0.400 & 0.401\\
+se & 0.157 & 0.471\\
+   \hline
+\end{tabular}
+\end{table}
+```
+
+
+
+## 第三题
+
+*问题描述：*
+用importance sampling方法计算$\int_1^{\infty}\dfrac{x^2}{\sqrt{2\pi}}e^{-x^2/2}dx$的MC估计。
+
+*解：*
+积分的MC估计值为：
+$$\hat \theta = \bar{g(X)} =\dfrac{1}{n}\sum_{i=1}^n\dfrac{g(x)}{f(x)}.$$
+根据上一题的分析，我们选择importance functions：
+$$f_(x) = e^{-(x-1)},~x>1,$$
+计算的代码及结果如下：
+```{r}
+m <- 1e6
+set.seed(123)
+g <- function(x) {
+  x^2 / sqrt(2*pi) * exp(-x^2/2) * (x > 1)
+}
+f1 <- function(x) {exp(-(x-1))* (x > 1)}
+
+u = runif(m)
+x = 1 - log(1-u)
+est <- mean(g(x)/f1(x))
+cat('g(x)的MC估计为：', est)
+```
+
+
+## 第四题
+
+*问题描述：*
+计算例5.13的stratified importance sampling estimate，与例5.10的结果比较一下。
+
+*思路：*
+先将$x$的区间均匀分成五段，根据每一段区间上的importance function，计算区间上的积分值，然后相加得到最终结果。
+
+*解：*
+为估计积分值：
+$$\theta = \int_0^1\dfrac{e^{-x}}{1+x^2}dx,$$
+我们选择的importance function为：
+$$f(x) = \dfrac{e^{-x}}{1-e^{-1}},~0<x<1.$$
+将$(0,1)$区间均匀分成五段后，第$j$区间上的importance function为：
+$$f_j(x) = \dfrac{5e^{-x}}{1-e^{-1}},~\dfrac{j-1}{5}<x<\dfrac{j}{5}.$$
+而积分的估计值为：
+$$\hat{\theta}_{SI} = \dfrac{1}{5}\sum_{j=1}^5\hat{\theta_j}.$$
+stratified importance sampling计算积分估计值及标准差的代码及结果如下：
+```{r}
+m = 1000
+theta_j = numeric(5)
+theta_SI = numeric(10)
+g = function(x){
+  exp(-x - log(1+x^2))*(x<1)*(x>0)
+}
+for(i in 1:10){
+  set.seed(i)
+  theta_j[1] = mean(g(runif(m/5, 0, 0.2)))
+  theta_j[2] = mean(g(runif(m/5, 0.2, 0.4)))
+  theta_j[3] = mean(g(runif(m/5, 0.4, 0.6)))
+  theta_j[4] = mean(g(runif(m/5, 0.6, 0.8)))
+  theta_j[5] = mean(g(runif(m/5, 0.8, 1)))
+  theta_SI[i] = mean(theta_j)
+}
+mu = mean(theta_SI)
+sd = sd(theta_SI)
+
+mu
+sd
+```
+例5.10的结果是$\hat{\theta} = 0.5258$，$sd(\hat{\theta})=0.0970$。与本题结果相比，积分的估计值接近，但本题的标准差小得多。
+
+
+
+
+## 第五题
+
+*问题描述：*
+假设使用95%的对称t区间来估计均值，但样本数据是非正态的。那么置信区间覆盖均值的概率不一定等于0.95。使用蒙特卡罗实验估计样本容量$n=20$的$\chi^2(2)$数据随机样本的t区间覆盖概率。将t区间结果与例6.4中的模拟结果进行比较。
+
+
+*思路：*
+先生成20个服从$\chi^2(2)$的随机数，计算样本的t检验的置信区间，然后统计一下包含真实均值的区间数量，除以1000即要求解的t区间覆盖概率。
+
+*解：*
+我们将计算区间的方法写在函数`CI`中，并用`replicate`函数重复1000次计算。代码及结果如下：
+```{r}
+n = 20
+m = 1000
+alpha = 0.05
+
+CI = function(n, alpha) {
+  x = rchisq(n, 2)
+  upCL = mean(x) + sqrt(var(x)/n) * qt(1-alpha/2, n-1)
+  lowCL = mean(x) - sqrt(var(x)/n) * qt(1-alpha/2, n-1)
+  CL = c(upCL, lowCL)
+  return (CL)
+}
+set.seed(123)
+myCI = replicate(m, expr = CI(n, alpha))
+
+prob = (mean(myCI[1,]<2)+mean(myCI[2,]>2))
+cat('随机样本的t区间覆盖概率为：', 1-prob)
+```
+当样本数据是非正态的时候，随机样本的t区间覆盖概率不再是$1-\alpha$，而是略小一些的值，在本题中是0.908。
+
+而在Example 6.4中，当样本数据是正态的时候，方差区间覆盖概率接近$1-\alpha$，为0.956；当样本数据是非正态的时候，方差区间覆盖概率远小于$1-\alpha$，为0.773。这也说明了，对于偏离正态数据，t区间应该比方差的区间更稳健。
+
+
+
+## 第六题
+
+*问题描述：*
+当抽样总体是非正态时，利用蒙特卡罗模拟研究t检验的经验1型错误率是否近似等于名义显著性水平$\alpha$。t检验对于轻微偏离正态是稳健的。讨论抽样总体为(i) $\chi^2(1)$、(ii) Uniform(0,2)和(iii) Exponential(1)的情况下的模拟结果。在每种情况下，检验$H_0:\mu =\mu_0~vs~H_1: \mu\neq\mu_0$，其中$\mu_0$分别为$\chi^2(1)$、Uniform(0,2)和Exponential(1)的均值。
+
+
+*思路：*
+每一个小题的思路都是类似的，生成n个服从某抽样总体分布的随机数，计算样本的t检验的P值（并据此做假设检验）及经验1型错误率。
+
+*解：*
+注意到$\chi^2(1)$、Uniform(0,2)和Exponential(1)的均值为1，因此在假设检验问题中，$\mu_0=1$。进行1000次试验，令$\alpha=0.05$，计算P值的均值以及经验1型错误率（P值小于名义显著性水平$\alpha$的概率）。代码及结果如下：
+
+```{r}
+m = 1000
+alpha = 0.05
+mu0 = 1
+n = 20
+p = matrix(0, 3, m)
+p.hat = error = numeric(3)
+
+for (j in 1:m) {
+  set.seed(j)
+  ttest1 = t.test(rchisq(n, 1), mu = mu0)
+  ttest2 = t.test(runif(n, 0, 2), mu = mu0)
+  ttest3 = t.test(rexp(n, 1), mu = mu0)
+  p[1, j] = ttest1$p.value
+  p[2, j] = ttest2$p.value
+  p[3, j] = ttest3$p.value
+}
+
+for (i in 1:3) {
+  p.hat[i] = mean(p[i,])
+  error[i] = mean(p[i,]<alpha)
+}
+p.hat
+error
+```
+由P值的均值大于显著性水平，我们没有充足的理由拒绝$H_0: \mu = \mu_0$，因此认为三个非正态抽样总体的均值为1。但经验1型错误率并不近似等于名义显著性水平$\alpha$，均大于$\alpha$。
+
+
+# HW4
+
+## 第一题
+
+*问题描述：*
+考虑m=1000个假设，其中前95%个原假设成立，后5%个对立假设成立。在原假设之下，P值服从U(0,1)分布，在对立假设之下，P值服从Beta(0.1,1)分布（可用rbeta生成随机数）。基于`p.adjust`，应用Bonferroni校正与BH校正生成的m个独立的P值，从而得到校正后的P值，与$\alpha=0.1$比较确定是否拒绝原假设。基于M=1000次模拟，估计FWER、FDR、TPR，输出一个表格。
+
+
+
+*思路：*在每一次模拟中，先按照不同假设下P值的分布生成m个P值，分别用两种校正方法计算校正后的P值，然后决定是否拒绝原假设。基于这一结果，再估计FWER、FDR、TPR。
+
+*解：*
+首先进行M=1000次模拟，在每一次模拟中，生成950个服从U(0,1)分布的随机数作为原假设成立下的P值，50个服从Beta(0,1)分布的随机数作为对立假设成立下的P值。分别用Bonferroni校正与BH校正得到校正后的1000个独立的P值，与$\alpha=0.1$比较，判断是否拒绝原假设。
+
+FWER的计算方法为：
+$$FWER = P(\mbox{当}H_0\mbox{为真时，至少拒绝1个}H_0),$$
+
+FDR的计算方法为：
+$$FDR = \dfrac{FP}{FP+TP} = \dfrac{\mbox{拒绝的}H_0\mbox{的数量}|H_0\mbox{为真}}{\mbox{拒绝的}H_0\mbox{的数量}|H_0\mbox{为真}+\mbox{拒绝的}H_0\mbox{的数量}|H_1\mbox{为真}},$$
+
+TPR的计算方法为（准确来说，“拒绝的$H_1$的数量”应当是“没有充分理由拒绝的$H_0$的数量”）：
+$$TPR = \dfrac{TP}{TP+FN} = \dfrac{\mbox{拒绝的}H_0\mbox{的数量}|H_1\mbox{为真}}{\mbox{拒绝的}H_0\mbox{的数量}|H_1\mbox{为真}+\mbox{拒绝的}H_1\mbox{的数量}|H_1\mbox{为真}},$$
+
+以下是实现该流程的代码：
+```{r}
+M = 1000
+m = 1000
+alpha = 0.1
+
+p_Bonf = p_BH = matrix(NA, M, m)
+value_Bonf = value_BH = matrix(NA, M, 3)
+
+for (i in 1:M) {
+  set.seed(i)
+  p_H0 = runif(0.95*m, 0, 1)
+  p_H1 = rbeta(0.05*m, shape1 = 0.1, shape2 = 1)
+  p = c(p_H0, p_H1)
+  p_Bonf[i,] = p.adjust(p, method = 'bonferroni')
+  p_BH[i,] = p.adjust(p, method = 'BH')
+  # FWER
+  value_Bonf[i, 1] = any(p_Bonf[i,1:950] < alpha)
+  value_BH[i, 1] = any(p_BH[i,1:950] < alpha)
+  # FDR
+  value_Bonf[i, 2] = sum(p_Bonf[i, 1:950] < alpha) / 
+    (sum(p_Bonf[i, 1:950] < alpha) + sum(p_Bonf[i, 951:1000] < alpha))
+  value_BH[i, 2] = sum(p_BH[i, 1:950] < alpha) / 
+    (sum(p_BH[i, 1:950] < alpha) + sum(p_BH[i, 951:1000] < alpha))
+  # TPR
+  value_Bonf[i, 3] = sum(p_Bonf[i, 951:1000] < alpha) / 
+    (sum(p_Bonf[i, 951:1000] < alpha) + sum(p_Bonf[i, 951:1000] >= alpha))
+  value_BH[i, 3] = sum(p_BH[i, 951:1000] < alpha) / 
+    (sum(p_BH[i, 951:1000] < alpha) + sum(p_BH[i, 951:1000] >= alpha))
+}
+```
+
+最后，我们将结果输出成表格：
+```{r}
+value = rbind(colMeans(value_Bonf), colMeans(value_BH))
+colnames(value) = c('FWER', 'FDR', 'TPR')
+rownames(value) = c('Bonferroni', 'B-H')
+knitr::kable(round(value, 3), format = "latex",align='c')
+```
+
+从结果可以看出，当$\alpha=0.1$时，Bonferroni校正的P值计算出的FWER约为0.1，但FDR远小于0.1。BH校正的P值计算出的FWER远大于0.1，FDR约为0.1。而且Bonferroni校正的P值计算出的TPR小于B-H校正的P值计算出的TPR。
+
+
+
+
+## 第二题
+
+*问题描述：*
+假设$X\sim Exp(\lambda)$，则$\lambda$的MLE为$\hat{\lambda}=1/\bar X$。这并不是一个无偏估计，$E\hat{\lambda} = n\lambda/(n-1)$，$sd(\hat{\lambda}) = n\lambda/[(n-1)\sqrt{n-2}]$。参数要求如下：
+
+- 真实值$\lambda = 2$，
+
+- 样本量$n = 5, 10, 20$，
+
+- Bootstrap的重复次数$B=1000$，
+
+- 模拟的重复次数$m=1000$，
+
+比较mean bootstrap bias，bootstrap standard error与理论值，将结果输出成一个表格。
+
+*思路：*
+首先生成n个$Exp(2)$的随机数，按照参数的估计式，在每一次模拟中，重复B次Bootstrap，计算Bootstrap estimates of bias and standard error。最后计算estimates的均值，与理论值比较。
+
+*解：*
+编写一个函数，输入为样本量n，进行1000次模拟，每次模拟进行1000次Bootstrap，输出Bootstrap estimates与理论值。代码如下：
+
+```{r}
+lambda_bootstrap = function(n){
+  # 理论值
+  bias_the = 2*n/(n-1) - 2
+  sd_the = 2*n/((n-1)*sqrt(n-2))
+  
+  m = 1000
+  B = 1000
+  bias = sd = numeric(m)
+  for (i in 1:m) {
+    x = rexp(n, 2)
+    set.seed(i)
+    lambda_star = numeric(B)
+    # 采样值
+    for (b in 1:B) {
+      xstar = sample(x, replace = TRUE)
+      lambda_star[b] = 1 / mean(xstar)
+    }
+    bias[i] = mean(lambda_star) - 1 / mean(x)
+    sd[i] = sd(lambda_star)
+  }
+  value = c(mean(bias), bias_the, mean(sd), sd_the)
+  return(value)
+}
+```
+
+分别计算样本量$n = 5, 10, 20$时的mean bootstrap bias，bootstrap standard error与相应的理论值：
+```{r}
+value = rbind(lambda_bootstrap(5),lambda_bootstrap(10),lambda_bootstrap(20))
+colnames(value) = c('Bias-bootstrap', 'Bias-theory', 'Sd-bootstrap', 'Sd-theory')
+rownames(value) = c('n=5', 'n=10', 'n=20')
+knitr::kable(round(value, 3), format = "latex",align='c')
+```
+
+从结果可以看出，虽然n较小（n=5）时，bootstrap方法计算的结果与理论值有较大差别，但随着n变大，偏差的bootstrap值与标准差的bootstrap值逐渐接近理论值。
+
+
+## 第三题
+
+*问题描述：*
+计算例7.2 correlation statistic的t置信区间的bootstrap估计.
+
+*思路：*
+进行B次bootstrap，每一次中都基于采样得到的样本计算correlation statistic，并且进行R次bootstrap来计算统计量的标准差。在实际编程中，可以将correlation statistic的计算编写成一个函数方便调用。
+
+
+*解：*
+假设$x = (x_1,...x_n)$是观测到的样本，则$100(1-\alpha)\%$bootstrap t confidence interval是：
+$$(\hat{\theta}-t^*_{1-\alpha/2}\hat{se}(\hat{\theta}),~ \hat{\theta}-t^*_{\alpha/2}\hat{se}(\hat{\theta})),$$
+其中，$\hat{\theta}$是基于观测样本直接计算出的correlation statistic，$\hat{se}(\hat{\theta})$
+是$\hat{\theta}$的标准差估计值。在第$b$次bootstrap中，记$t^{(b)}=\dfrac{\hat{\theta}^{(b)}-\hat{\theta}}{\hat{se}(\hat{\theta}^{(b)})}$，其中$\hat{se}(\hat{\theta}^{(b)})$是再次用bootstrap方法，从当前bootstrap样本$x^{(b)}$中重采样得到的估计值，则$t^*_{1-\alpha/2}$与$t^*_{\alpha/2}$为$t^{(1)},...,t^{(B)}$的分位数。
+
+首先将计算correlation statistic的方法编写成函数`correlation`：
+
+```{r echo = FALSE}
+library(bootstrap)
+```
+
+```{r}
+correlation = function(data){
+  cor(data[,1],data[,2])
+}
+```
+
+接着，我们将计算t置信区间的方法编写成函数`Boot.t.CI`。在输入的参数中，总bootstrap次数B的默认值为500，为估计$\hat{se}(\hat{\theta})$的bootstrap次数R的默认值为100，置信水平level的默认值为0.95，statistic为指定的统计量计算方法：
+```{r}
+Boot.t.CI = function(x, B = 500, R = 100, level = 0.95, statistic){
+  # 初始化
+  x = as.matrix(x)
+  n = nrow(x)
+  stat = numeric(B)
+  se = numeric(B)
+  alpha = 1 - level
+  
+  # estimate of standard error
+  boot.se <- function(x, R, f) {
+    # 初始化
+    x = as.matrix(x)
+    m = nrow(x)
+    # 计算hat theta并返回sd
+    theta = replicate(R, expr = {
+      i = sample(1:m, size = m, replace = TRUE) 
+      f(x[i, ])
+      })
+    return(sd(theta))
+  }
+  
+  # B times bootstrap
+  for (b in 1:B) {
+    j = sample(1:n, size = n, replace = TRUE)
+    y = x[j, ]
+    stat[b] = statistic(y)
+    se[b] = boot.se(y, R = R, f = statistic)
+  }
+  
+  # CI
+  stat0 = statistic(x)
+  t = (stat - stat0) / se
+  se0 = sd(stat)
+  tstar = quantile(t, c(alpha/2, 1-alpha/2), type = 1)
+  names(tstar) = rev(names(tstar))
+  CI = rev(stat0 - tstar * se0)
+}
+```
+
+最后，我们调用`Boot.t.CI`与`correlation`函数，计算correlation statistic的95%t置信区间的bootstrap估计。指定B=2000，R=200.
+```{r}
+set.seed(5)
+data = cbind(law$LSAT,law$GPA)
+corCI = Boot.t.CI(data, statistic = correlation, B=2000, R=200)
+cat('correlation statistic的95%t置信区间是：', corCI)
+```
+
+
+而根据样本直接计算出的相关系数为`r cor(law$LSAT,law$GPA)`，可以看出本题计算的95%t置信区间的bootstrap估计包含了样本相关系数。
+
+
+# HW5
+
+## 第一题
+
+*问题描述：*根据习题7.4，分别用standard normal, basic, percentile,
+and BCa四种方法，计算the
+mean time between failures（即$1/\lambda$）的95\% bootstrap confidence intervals。比较这些区间，并解释它们为什么不同。
+
+*思路：*由习题7.4可知$\lambda$的MLE估计，从而可以用样本数据计算$1/\lambda$的估计量，代入到置信区间的公式中得到结果。
+
+*解：*
+由于数据服从$Exp(\lambda)$，$\lambda$的MLE估计为：
+$$\hat\lambda = \dfrac{n}{\sum_{i=1}^n}x_i=\dfrac{1}{\bar x},$$
+因此，$1/\lambda$的MLE估计为：
+$$\dfrac{1}{\hat\lambda}=\bar x.$$
+
+我们分别用`boot`中自带的`boot.ci()`函数以及自己编写的函数计算四个置信区间。
+
+（1）`boot.ci()`函数的R代码及结果如下：
+```{r}
+# 导入数据
+library(boot)
+data = aircondit
+lam.hat = mean(data$hours)
+# 编写函数
+lambda = function(dat, ind) {
+  mean(dat[ind, 1]) }
+```
+
+```{r}
+set.seed(5)
+boot_result = boot(data, statistic = lambda, R=2000)
+boot_CI = boot.ci(boot_result, type=c("norm", "basic", "perc", "bca"))
+print(boot_CI)
+```
+
+根据区间值可以看出，BCa置信区间的左右端点都是四个区间中最高的，而Basic置信区间的左右端点则是四个区间中最低的。这是由于Basic置信区间是基于大样本假定的，普适性强，但效果也不如其它区间。而其它区间分别带有一定的假定或进行了校正。
+
+（2）自己编写的standard normal interval代码及结果：
+```{r}
+# global variables
+lam0 = mean(data$hours)
+conf = 0.05
+alpha = c(1 - conf/2, conf/2)
+zalpha = qnorm(alpha)
+B = 2000
+n = nrow(data)
+
+lam.normal = lam.basic = lam.bca = numeric(B)
+for (b in 1:B) {
+  i = sample(1:n, size = n, replace = TRUE)
+  dat = data$hours[i]
+  lam.normal[b] = lam.basic[b] = lam.bca[b] = mean(dat)
+}
+```
+
+```{r}
+# normal
+se.normal = sd(lam.normal)
+CI.normal = lam0 - zalpha*se.normal
+cat('95% standard normal interval = (', CI.normal[1], ',', CI.normal[2], ')')
+```
+
+（3）自己编写的basic interval代码及结果：
+```{r}
+# basic
+lam.quant = quantile(lam.basic, alpha)
+CI.basic = 2*lam0 - lam.quant
+cat('95% basic interval = (', CI.basic[1], ',', CI.basic[2], ')')
+```
+
+
+（4）自己编写的percentile interval代码及结果：
+```{r}
+# percentile
+cat('95% percentile interval = (', lam.quant[2], ',', lam.quant[1], ')')
+```
+
+
+（5）自己编写的BCa interval代码及结果：
+```{r}
+# bca
+BCa = function(dat, lam0, lam, stat, conf){
+  dat = as.matrix(dat)
+  n = nrow(dat)
+  N = 1:n
+  alpha = c(conf/2, 1 - conf/2)
+  zalpha = qnorm(alpha)
+  z0 = qnorm(sum(lam < lam0) / length(lam)) # length(lam) = B
+  
+  lam.jack = numeric(n)
+  for (i in 1:n) {
+    J = N[1:(n-1)] # 为了和dat[-i, ]的index对应
+    jack.data = as.data.frame(dat[-i,1])
+    lam.jack[i] <- stat(jack.data, J)
+  }
+  L = mean(lam.jack) - lam.jack
+  a = sum(L^3)/(6 * sum(L^2)^1.5)
+  hat.alpha = pnorm(z0 + (z0+zalpha)/(1-a*(z0+zalpha)))
+  
+  limits = quantile(lam, hat.alpha, type=6) # the formula below 7.9
+  return("BCa"=limits)
+}
+
+BCa(data, lam0 = lam0, lam = lam.bca, stat = lambda, conf = conf)
+```
+
+将结果与自带函数的结果对比，非常接近，说明我们自己编写的函数是正确的。
+
+
+
+## 第二题
+
+*问题描述：*数据是n个学生五场考试的成绩，记数据的协方差矩阵为$\Sigma$，特征值为$\lambda_1>\lambda_2>...>\lambda_5$。在主成分分析中，
+$$\hat\theta=\dfrac{\hat\lambda_1}{\sum_{i=1}^5\hat\lambda_i},$$
+其中，$\hat\lambda_1>\hat\lambda_2>...>\hat\lambda_5$是
+$\Sigma$的MLE估计$\hat\Sigma$的特征值。
+计算$\theta$的bias和standard error的jacknife估计。
+
+
+*思路：*这题本质上是要用jacknife估计数据的协方差矩阵，然后再求特征值，计算$\hat\theta$，最后再求bias和standard error。
+
+*解：*
+对于统计量$\hat\theta$，bias的jacknife估计为：
+$$\hat{bias}=(n-1)(\bar{\hat\theta}_{(\cdot)}-\hat\theta,)$$
+其中，$\bar{\hat\theta}_{(\cdot)}=\frac{1}{n}\sum_{i=1}^n\hat\theta_{(i)}$，$\hat\theta$是用全部样本计算的估计值。
+
+standard error的jacknife估计为：
+$$\hat{se}=\sqrt{\dfrac{n-1}{n}\sum_{i=1}^n(\hat\theta_{(i)}-\bar{\hat\theta}_{(\cdot)})^2}.$$
+我们首先导入数据，并根据$\hat\theta$的表达式，写出相应的函数`theta.fun`。
+```{r}
+library(bootstrap)
+data = scor
+n = nrow(data)
+cov.fun = function(data, ind){cov(data[ind, ], method = "pearson")}
+theta.fun = function(lambda){lambda[1]/sum(lambda)}
+```
+
+接下来，开始正式计算：
+```{r}
+jack_th = numeric(n)
+orig_sigma = cov.fun(data)
+orig_th = theta.fun(eigen(orig_sigma)$values)
+for (i in 1:n) {
+    jack_sigma = cov.fun(data, -i)
+    jack_th[i] = theta.fun(eigen(jack_sigma)$values)
+}
+bias = (n - 1) * (mean(jack_th) - orig_th)
+se <- sqrt((n-1) * mean((jack_th - mean(jack_th))^2))
+cat('jackknife estimate of bias is:', bias)
+cat('jackknife estimate of standard error is:', se)
+```
+
+
+## 第三题
+
+*问题描述：*例7.18使用的是留一（n 折）交叉验证来选择
+最合适的模型。使用留二交叉验证来比较模型。
+
+*思路：*留二交叉验证就是保留两个样本，在余下的样本上训练模型并计算模型的评价准则，选择MSE最小的模型作为最合适的模型。
+
+*解：*本题共有四个模型，
+
+1. Linear: $Y = \beta_0 + \beta_1X + \varepsilon$.
+
+2. Quadratic: $Y = \beta_0 + \beta_1X + \beta_2X2 + \varepsilon$.
+
+3. Exponential: $\log(Y ) = \log(\beta_0) + \beta_1X + \varepsilon$.
+
+4. Log-Log: $\log(Y ) = \beta_0 + \beta_1 \log(X) + \varepsilon$.
+
+留二交叉验证法的基本思想是每次保留两个样本，在余下的样本上训练模型，直到遍历所有样本。因此总循环次数为$C_n^2$。分别在这四个模型上使用留二交叉验证法，模型的评价准则为MSE最小。
+```{r}
+library(DAAG)
+magnetic = ironslag$magnetic
+chemical = ironslag$chemical
+n = length(magnetic)
+e1 = e2 = e3 = e4 = matrix(NA, choose(n, 2), 2)
+
+for (i in 1:n-1) {
+  for (j in (i+1):n) {
+    k = (i-1)*(n-i/2) + (j-i)
+    y <- magnetic[-c(i,j)]
+    x <- chemical[-c(i,j)]
+    J1 <- lm(y ~ x)
+    yhat1 <- J1$coef[1] + J1$coef[2] * chemical[c(i,j)]
+    e1[k, ] <- magnetic[c(i,j)] - yhat1
+    
+    J2 <- lm(y ~ x + I(x^2))
+    yhat2 <- J2$coef[1] + J2$coef[2] * chemical[c(i,j)] +
+      J2$coef[3] * chemical[c(i,j)]^2
+    e2[k, ] <- magnetic[c(i,j)] - yhat2
+    
+    J3 <- lm(log(y) ~ x)
+    logyhat3 <- J3$coef[1] + J3$coef[2] * chemical[c(i,j)]
+    yhat3 <- exp(logyhat3)
+    e3[k, ] <- magnetic[c(i,j)] - yhat3
+    
+    J4 <- lm(log(y) ~ log(x))
+    logyhat4 <- J4$coef[1] + J4$coef[2] * log(chemical[c(i,j)])
+    yhat4 <- exp(logyhat4)
+    e4[k, ] <- magnetic[c(i,j)] - yhat4
+  }
+}
+c(mean(e1^2), mean(e2^2), mean(e3^2), mean(e4^2))
+```
+
+根据输出的MSE可知，第二个模型是最合适的模型。这一结论与留一交叉验证的结论相同。在全部数据上训练模型2，拟合的结果如下：
+
+```{r}
+L2 <- lm(magnetic ~ chemical + I(chemical^2))
+L2
+```
+
+
+# HW6
+
+## 第一题
+
+*问题描述：*证明Metropolis-Hastings sampler算法在连续情形下的平稳性。
+
+*证：*首先给出一些符号的定义。记接受概率$\alpha(s,r)$为：
+$$\alpha(s,r) = \min\{\dfrac{f(r)q(s|r)}{f(s)q(r|s)},1\},$$
+其中，$f(\cdot)$为目标分布的概率密度函数，$q(s|r)$为提议分布。
+
+转移概率$p(s,r)$为：
+$$p(s,r)=q(s|r)\alpha(s,r).$$
+
+接下来，要证明平稳性，即证明$f(s)p(s,r) = f(r)p(r,s)$：
+
+（1）$r=s$：显然成立；
+
+（2）$r\neq s$：
+$$f(s)p(s,r) = f(s)q(r|s)\alpha(s,r) = f(s)q(r|s)\min\{\dfrac{f(r)q(s|r)}{f(s)q(r|s)},1\}$$
+
+$$ =\left\{
+\begin{array}{rcl}
+f(r)q(s|r),       &      & {f(s)q(r|s)\geq f(r)q(s|r)}\\
+f(s)q(r|s),     &      & {f(s)q(r|s)< f(r)q(s|r)}
+\end{array} \right. $$
+
+同理可得：
+$$f(r)p(r,s) = f(r)q(s|r)\alpha(r,s) = f(r)q(s|r)\min\{\dfrac{f(s)q(r|s)}{f(r)q(s|r)},1\}$$
+
+$$ =\left\{
+\begin{array}{rcl}
+f(r)q(s|r),       &      & {f(s)q(r|s)\geq f(r)q(s|r)}\\
+f(s)q(r|s),     &      & {f(s)q(r|s)< f(r)q(s|r)}
+\end{array} \right. $$
+
+综上，即证得$f(s)p(s,r) = f(r)p(r,s)$，Metropolis-Hastings sampler算法在连续情形下也具有平稳性。
+
+
+## 第二题
+
+*问题描述：*在例8.1和8.2的数据上，使用两样本Cramer-von Mises test作为permutation test来检验分布相等性。
+
+*思路：*按照Cramer-von Mises 统计量的定义，编写出统计量$W_2$的程序。然后通过R次replicates，比较每一次replicate的统计量与全部样本数据计算得到的统计量，从而计算出检验的p值，判断分布是否相等。
+
+*解：*检验的假设为：
+$$H_0:~F=G~~vs~~H_1:~F\neq G.$$
+检验分布相等的Cramer-von Mises test的统计量定义如下：
+$$W_2 = \dfrac{mn}{(m+n)^2}[\sum_{i=1}^n(F_n(x_i)-G_m(x_i))^2+\sum_{j=1}^m(F_n(y_j)-G_m(y_j))^2],$$
+其中，$F_n$是样本$x_1,...x_n$的ecdf，$G_m$是样本$y_1,...y_m$的ecdf。记$r_i$，$s_j$分别为秩序统计量$x_{(i)}$，$y_{(j)}$在混合样本中的秩，则ecdf的计算公式如下：
+$$F_n(x_{(i)})-G_m(x_{(i)})=\dfrac{i}{n}-\dfrac{r_i-i}{m},$$
+$$F_n(y_{(j)})-G_m(y_{(j)})=\dfrac{s_j-j}{n}-\dfrac{j}{m}.$$
+
+本题的代码如下，replicates的次数为999：
+```{r}
+# 导入数据
+attach(chickwts)
+x = as.vector(weight[feed=='soybean'])
+y = as.vector(weight[feed=='linseed'])
+detach(chickwts)
+```
+
+```{r}
+R = 999
+z = c(x, y)
+n = length(x)
+m = length(y)
+# 计算每一个元素的经验累计密度函数值，前n个元素为x，后m个元素为y
+ecdf_x = rank(x)/n - (rank(z)[1:14]-rank(x))/m
+ecdf_y = (rank(z)[15:26]-rank(y))/n - rank(y)/m
+K = 1:(m+n)
+W_rep = numeric(R)
+W0 = m*n*((sum(ecdf_x^2)+sum(ecdf_y^2)))/(m+n)^2
+set.seed(5)
+for (i in 1:R) {
+  k = sample(K, size = 14, replace = FALSE)
+  x1 = z[k]
+  y1 = z[-k]
+  z1 = c(x1, y1)
+  ecdf_x1 = rank(x1)/n - (rank(z1)[1:14]-rank(x1))/m
+  ecdf_y1 = (rank(z1)[15:26]-rank(y1))/n - rank(y1)/m
+  W_rep[i] = m*n*((sum(ecdf_x1^2)+sum(ecdf_y1^2)))/(m+n)^2
+}
+p = mean(c(W0,W_rep)>=W0)
+p
+```
+
+Cramer-von Mises test的P值为0.391。与例题8.1和8.2相比，虽然都做出了接受原假设的判断，但CvM test的P值比t检验的大，比KS检验的小。我们还可以通过图像了解统计量的分布情况，其中，横轴上黑色的点为原始数据计算的统计量W2.
+
+```{r echo=FALSE}
+hist(W_rep, main = 'Permutation distribution of replicates',
+     freq = FALSE, xlab = 'W2(p = 0.391)', breaks = 'scott')
+points(W0, 0, cex = 1, pch = 16)
+```
+
+
+## 第三题
+
+*问题描述：*6.4节中，方差相等的count 5 test是基于极端点的最大数量的。例6.15展示了count 5准则并不适用于样本量不相等的情况。在样本量不相等的情况下，基于极端点的最大数量，使用permutation test来检验方差是否相等。
+
+*思路：*首先根据极端点数量大于5则方差不等的思想，编写函数使其具有count 5 test的功能。然后生成样本量不等、方差相等的两组数据。在R次permutation中，打乱样本顺序，实施count 5 test，计算统计量，判断是否拒绝原假设。
+
+*解：*
+编写函数`count 5 test`，统计量为`max(c(extrem_x, extrem_y))`，如果统计量大于5，则返回值为1，拒绝$H_0$，否则，返回值为0，没有充足理由拒绝$H_0$。
+```{r}
+count5test = function(x, y){
+  x = x - mean(x)
+  y = y - mean(y)
+  # count
+  extrem_x = sum(x > max(y)) + sum(x < min(y))
+  extrem_y = sum(y > max(x)) + sum(y < min(x))
+  return(max(c(extrem_x, extrem_y)))
+}
+```
+
+为了更全面地展示结果，我们分别考虑样本方差相等和不相等的两种情况，并在每种情况下逐渐增大y的样本量。
+
+（1）样本方差相等：两组正态分布样本，初始样本量分别为20、20，方差相等，均为1。replicates的次数为999。y的样本量从20增加至100，步长为10：
+```{r}
+R = 999
+n1 = 20
+mu1 = mu2 = 0
+sigma1 = sigma2 = 1
+y_seq = seq(20,100,10)
+p1 = numeric(length(y_seq))
+
+for (j in 1:length(y_seq)) {
+  set.seed(6)
+  n2 = y_seq[j]
+  K = 1:(n1+n2)
+  x = rnorm(n1, mu1, sigma1)
+  y = rnorm(n2, mu2, sigma2)
+  C0 = count5test(x, y)
+  
+  C_rep = numeric(R)
+  for (i in 1:R) {
+    k = sample(K, size = n1, replace = FALSE)
+    z = c(x, y)
+    x1 = z[k]
+    y1 = z[-k]
+    C_rep[i] = count5test(x1, y1)
+  }
+  p1[j] = mean(c(C0, C_rep) >= C0)
+}
+p1
+```
+
+
+
+
+（2）
+样本方差不相等： 两组正态分布样本，初始样本量分别为20、20，方差分别为1和1.5。replicates的次数为999。y的样本量从20增加至100，步长为10：
+```{r}
+R = 999
+n1 = 20
+mu1 = mu2 = 0
+sigma1 = 1
+sigma2 = 1.5
+y_seq = seq(20,100,10)
+p2 = numeric(length(y_seq))
+
+for (j in 1:length(y_seq)) {
+  set.seed(6)
+  n2 = y_seq[j]
+  K = 1:(n1+n2)
+  x = rnorm(n1, mu1, sigma1)
+  y = rnorm(n2, mu2, sigma2)
+  C0 = count5test(x, y)
+  
+  C_rep = numeric(R)
+  for (i in 1:R) {
+    k = sample(K, size = n1, replace = FALSE)
+    z = c(x, y)
+    x1 = z[k]
+    y1 = z[-k]
+    C_rep[i] = count5test(x1, y1)
+  }
+  p2[j] = mean(c(C0, C_rep) >= C0)
+}
+p2
+```
+
+最后，我们将结果输出成表格：
+```{r}
+value = rbind(p1, p2)
+colnames(value) = y_seq
+rownames(value) = c('方差相等', '方差不相等')
+knitr::kable(round(value, 3), format = "latex", align='c')
+```
+
+表格的每一列代表y的样本量（x的样本量始终为20），第一行是在方差相等的设定下，用count 5 test检验方差是否相等的P值，第二行是在方差不相等的设定下，用count 5 test检验方差是否相等的P值。
+
+在原假设成立，即样本方差相等的设定下，随着样本量不相等的程度增加，P值逐渐变小。虽然在0.05的显著性水平下，始终没有充足的理由拒绝原假设，但是P值变小说明有越来越强的倾向拒绝原假设，也就是说，样本落在拒绝域内的可能性越来越大，犯一类错误的可能性变大。
+
+而在备择假设成立，即样本方差不相等的设定下，随着样本量不相等的程度增加，P值逐渐变大。虽然在0.05的显著性水平下，始终可以拒绝原假设，但是P值变大说明拒绝原假设的能力越来越弱，样本落在拒绝域内的可能性越来越小，犯二类错误的可能性变大。
+
+综上所述，当样本量不相等时，count 5 test犯一类、二类错误的可能性均增加。这就是该检验的缺点。
+
+
+# HW7
+
+## 第一题
+
+*问题描述：*考虑如下的模型：
+$$P(Y=1|X_1,X_2,X_3)=\dfrac{\exp(a+b_1X_1+b_2X_2+b_3X_3)}{1+\exp(a+b_1X_1+b_2X_2+b_3X_3)},$$
+其中$X_1\sim P(1)$，$X_2\sim Exp(1)$，$X_3\sim B(1,0.5)$。
+
+- 设计一个函数，以$N,~b_1,~b_2,~b_3,~f_0$作为输入的参数，并输出$a$;
+
+- 给定具体的输入值$N=10^6,~b_1=0,~b_2=1,~b_3=-1,~f_0=0.1,~0.01,~0.001,~0.0001$;
+
+- 画出$-\log f_0~\mbox{vs}~a$的图像。
+
+
+*思路：*根据模型表达式，写一个用`uniroot`方法来求解$a$的函数。然后将题目给定的参数值输入到函数中，求解$a$，并绘制图像。
+
+
+*解：*在设计的函数`alpha.solve`中，我们首先分别生成随机数$X_1$，$X_2$，$X_3$各$N$个。然后，`alpha.solve`调用另一个自己设计的函数`g.alpha`，`g.alpha`的功能是构建关于$\alpha$的函数$g(\alpha)$：
+$$g(\alpha) = \dfrac{1}{N}\sum_{i=1}^N\dfrac{1}{1+\exp(-\alpha-b_1x_1-b_2x_2-b_3x_3)}-f_0.$$
+最后用**R**自带的`uniroot`方法求解方程$g(\alpha)=0$的根，输出方程的解$a$，代码如下：
+```{r}
+alpha.solve = function(alpha, N, b1, b2, b3, f0){
+  x1 = rpois(N, 1)
+  x2 = rexp(N, 1)
+  x3 = rbinom(N, 1, 0.5)
+  g.alpha = function(alpha){
+  temp = exp(-alpha-b1*x1-b2*x2-b3*x3)
+  mean(1/(1+temp)) - f0
+  }
+  solution = uniroot(g.alpha, c(-20, 20))
+  alpha = round(solution$root, 5)
+  return(alpha)
+}
+
+set.seed(7)
+f = c(0.1, 0.01, 0.001, 0.0001)
+alpha.root = numeric(length(f))
+for (i in 1:length(f)) {
+  alpha.root[i] = alpha.solve(N=1e6, b1=0, b2=1, b3=-1, f0=f[i])
+}
+alpha.root
+```
+
+可以看出，函数成功地输出了$a$。接下来通过图像观察$-\log f_0$和$a$之间的关系，二者之间为线性关系，随着$f_0$增加，$-\log f_0$降低，$a$增大。
+
+```{r, echo=FALSE}
+# plot
+f1 = seq(0.0001, 0.1, 0.001)
+alpha.root1 = numeric(length(f1))
+for (i in 1:length(f1)) {
+  alpha.root1[i] = alpha.solve(N=1e6, b1=0, b2=1, b3=-1, f0=f1[i])
+}
+log.f0 = -log(f1)
+plot(log.f0, alpha.root1)
+```
+
+## 第二题
+
+*问题描述：*使用随机游走Metropolis sampler来生成标准拉普拉斯分布。增量从正态分布中生成。当提议分布的方差不同时，比较这些生成的链。此外，请比较每条链的接受率。
+
+*思路：*目标分布是标准拉普拉斯分布。由于增量从正态分布中生成，因此提议分布是正态分布，均值为上一步生成的随机数，方差待定。分别在提议分布的方差为0.05，0.5，2，16的条件下生成链。
+
+
+*解：*注意到当提议分布是正态分布$N(X_t,\sigma^2)$时，$g(r|s) = g(s|r)$，因此候选点$Y$的接受概率为：
+$$\alpha(X_t,Y) = \min(1,\dfrac{f(Y)}{f(X_t)}).$$
+此外，标准拉普拉斯分布的密度函数是$f(x)=\frac{1}{2}e^{-|x|},~x\in R$。
+
+生成链的算法流程如下：
+
+（1）指定$X_1$为30（也可以从提议分布中生成，但这里为了比较四种方差，就固定为30）；
+
+（2）第$i(i = 1,...,N)$次循环中：
+
+a) 从提议分布$N(X_{i-1},\sigma^2)$中生成$Y$；
+
+b) 从$U(0,1)$中生成$U$；
+
+c) 计算$\alpha = f(Y)/f(X_{i-1})$，如果$U\leq \alpha$，则接受$Y$，并令$X_{i}=Y$；否则令$X_{i}=X_{i-1}$。
+
+```{r}
+# Metropolis函数，返回生成的样本x和接受率rate
+laplace = function(x){exp(-abs(x))/2}
+Metropolis = function(N, x0, sigma) {
+  x = numeric(N)
+  u = runif(N)
+  x[1] = x0
+  rate = 0
+  for (i in 2:N) {
+    y = rnorm(1, x[i-1], sigma)
+    if(u[i] <= laplace(y) / laplace(x[i-1])){
+      x[i] = y
+      rate = rate + 1
+    }
+    else{
+      x[i] = x[i-1]
+    }
+  }
+  return(list(x = x, rate = rate/N))
+}
+```
+
+
+我们在提议分布的方差为0.05，0.5，2，16的条件下生成链，每条链的样本为5000个。
+```{r}
+set.seed(7)
+N = 5000
+sigma = c(0.05, 0.5, 2,  16)
+x0 = 30
+rw1 = Metropolis(N, x0, sigma[1])
+rw2 = Metropolis(N, x0, sigma[2])
+rw3 = Metropolis(N, x0, sigma[3])
+rw4 = Metropolis(N, x0, sigma[4])
+
+# 输出接受率
+accepted = data.frame(sigma = sigma, 
+                      accepted.rate = c(rw1$rate, rw2$rate, rw3$rate, rw4$rate))
+knitr::kable(accepted,format='latex')
+```
+
+从输出的接受率的表格可以看出，随着提议分布方差增大，样本的接受率减小。但并不是接受率越大越好，因为我们需要在接受率和收敛速度之间做好平衡，才能生成理想的样本。
+
+最后，通过图像来比较这些生成的链。
+
+```{r, echo=FALSE}
+# par(mfrow=c(2,2))
+quantile = c(-3, 3)
+rw = cbind(rw1$x, rw2$x, rw3$x,  rw4$x)
+for (j in 1:4) {
+  plot(rw[,j], type="l",
+       xlab = bquote(sigma == .(round(sigma[j],3))),
+       ylab = "X", ylim=range(rw[,j]))
+  abline(h = quantile, col = 'red')
+}
+```
+
+在第一个图中（$\sigma$ = 0.05），接受率很大，但在5000 次迭代中没有收敛到目标分布。在第二个图中（$\sigma$ = 0.5），链收敛得非常缓慢。在第三个图中（$\sigma$ = 2），链混合的效果比较好，约100步就收敛到目标分布。在第四个图中（$\sigma$ = 16），接受率非常小，因此第四条链收敛的效率很低。
+
+
+## 第三题
+
+*问题描述：*使用Gibbs sampler来生成二元正态链$S_t = (X_t,Y_t)$，随机变量具有0均值，单位标准差和0.9的相关性。丢弃适当的预烧样本后，绘制出生成的样本的图像。在生成的样本上拟合一个简单的线性回归模型$Y=\beta_0+\beta_1X$，检查模型的残差的正态性、方差是否为常数。
+
+*思路：*Gibbs sampler的思想是从$f(X_j|x_{(-j)})$中生成样本$X_j$，在本题二维正态的条件下，计算条件分布的参数，然后生成样本即可。
+
+*解：*根据联合正态分布的条件分布的性质，有：
+$$f(x|y)\sim N(\mu_1+\dfrac{\rho\sigma_1}{\sigma_2}(y-\mu_2),(1-\rho^2)\sigma_1^2),$$
+$$f(y|x)\sim N(\mu_2+\dfrac{\rho\sigma_2}{\sigma_1}(x-\mu_1),(1-\rho^2)\sigma_2^2).$$
+按照如下流程生成$T$个样本。在第$t$次生成中：
+
+（1）令$(x,y)=S(t-1)$;
+
+（2）从$f(X|y)$中生成$X(t)$；
+
+（3）更新$x_1$为$X(t)$；
+
+（4）从$f(Y|x)$中生成$Y(t)$；
+
+（5）令$S(t)=(X(t),Y(t))$。
+
+将$\mu_1 = \mu_2=0,~\sigma_1=\sigma_2=1,~\rho = 0.9$代入，生成5000个样本。丢弃1000个预烧样本后，绘制出生成的样本的图像。
+
+```{r}
+# 定义参数
+N = 5000
+burn = 1000
+S = matrix(0, N, 2)
+rho = 0.9
+mu1 = mu2 = 0
+sigma1 = sigma2 = 1
+k1 = sqrt(1-rho^2)*sigma1
+k2 = sqrt(1-rho^2)*sigma2
+# 初始化
+S[1, ] = c(mu1, mu2)
+for (i in 2:N) {
+  y = S[i-1, 2]
+  m1 = mu1 + rho * (y - mu2) * sigma1/sigma2
+  S[i, 1] = rnorm(1, m1, k1)
+  x = S[i, 1]
+  m2 = mu2 + rho * (x - mu1) * sigma2/sigma1
+  S[i, 2] = rnorm(1, m2, k2)
+}
+s = S[(burn + 1):N, ]
+```
+
+
+```{r, echo=FALSE}
+plot(s[,1], type='l', col=1, lwd=2, xlab='Index', ylab='Random numbers')
+lines(s[,2], col=2, lwd=2)
+legend('topright', c(expression(X_t), expression(Y_t)), col=1:2, lwd=2)
+```
+
+图像中，黑色代表样本$X_t$，红色代表样本$Y_t$。丢弃1000个预烧样本后，生成的链达到收敛状态。从两条链的重合度可以看出，二者相关系数很高，并且均值约为0.
+
+
+线性回归模型残差性质的检验通过`lm`函数来实现。从残差散点图可以看出，残差的取值在0附近波动，没有呈现出异方差的特点，可以认为方差是常数。利用QQ图，可以认为残差满足正态性假定。
+```{r, echo=FALSE}
+X = s[,1]
+Y = s[,2]
+model = lm(Y ~ X)
+residuals <- resid(model)
+# 残差图判断方差齐性
+plot(residuals, main = "Residual Plot", xlab = "Observation", ylab = "Residuals")
+# QQ图判断正态性
+qqnorm(residuals)
+qqline(residuals)
+``` 
+
+
+
+## 第四题
+
+*问题描述：*根据例9.1，使用Gelman-Rubin方法来监测链的收敛性，并且继续生成链，直到在$\hat R<1.2$的准则下近似收敛到目标分布。同样地，使用coda包，通过Gelman-Rubin方法监测链的收敛性。
+
+*思路：*Gelman-Rubin方法通过比较多个独立运行的MCMC链的方差来检查链是否已经收敛到了目标分布。指定参数值和链的条数，计算Gelman-Rubin统计量，并和1.2的阈值进行比较，判断是否收敛。
+
+
+*解：*使用Metropolis-Hastings方法从Rayleigh分布中生成样本。Rayleigh分布的密度函数为：
+$$f(x)=\dfrac x{\sigma^2}e^{-x^2/(2\sigma^2)},\quad x\geq 0, \sigma>0.$$
+生成的流程及函数如下：
+
+（1）指定提议分布$g(\cdot|X)$ 为$\chi^2(X)$；
+
+（2）从$\chi^2(1)$中生成$X_1$；
+
+（3）重复$i=2,\ldots,N$：
+
+a) 从$\chi^2(X_{i-1})$中生成$Y$；
+
+b) 从$U(0,1)$中生成$U$；
+
+c) 计算$\alpha(X_{i-1},Y)=\frac{f(Y)g(X_{i-1}|Y)}{f(X_{i-1})g(Y|X_{i-1})}$。若$U\leq \alpha(X_{i-1},Y)$则
+接受$Y$并令$X_i=Y$，否则令$X_{i}=X_{i-1}$。
+
+```{r}
+# Rayleigh function returns pdf
+Rayleigh = function(x, sigma) {
+  if (any(x < 0)) return (0)
+  stopifnot(sigma > 0)
+  return((x / sigma^2) * exp(-x^2 / (2*sigma^2)))
+}
+# Rchain function generates chain for Rayleigh dist
+Rchain = function(sigma, N, X1) {
+  x = rep(0, N)
+  x[1] = X1
+  u = runif(N)
+  for (i in 2:N) {
+    xt = x[i-1]
+    y = rchisq(1, df = xt)
+    r1 = Rayleigh(y, sigma) * dchisq(xt, df = y)
+    r2 = Rayleigh(xt, sigma) * dchisq(y, df = xt)
+    if (u[i] <= r1/r2){
+      x[i] = y
+    }else{
+      x[i] = xt
+    }
+  }
+  return(x)
+}
+```
+
+
+在Gelman-Rubin方法中，scalar summary statistic $\psi_{ij}$ 是时刻$i$下第$j$条链的均值。Gelman-Rubin统计量$\hat R$的计算公式如下：
+$$\hat R = \dfrac{\hat Var(\psi)}{W},$$
+其中，$\hat Var(\psi) = \dfrac{n-1}{n}W+\dfrac{1}{n}B$，$W$为$\psi_{ij}$的组内方差，$B$为$\psi_{ij}$的组间方差。实现Gelman-Rubin方法的函数如下：
+
+```{r}
+# 函数Gelman.Rubin以psi作为输入
+Gelman.Rubin = function(psi) {
+  psi = as.matrix(psi)
+  n = ncol(psi)
+  k = nrow(psi)
+  B = n * var(rowMeans(psi))
+  W = mean(apply(psi, 1, "var"))
+  v.hat = W*(n-1)/n + B/n
+  r.hat = v.hat / W
+  return(r.hat)
+}
+```
+
+与例9.1一致，我们在$\sigma^2=16$的条件下，生成4条链，每一条链指定不同的初始值。生成20000个样本并将前1000个作为预烧样本丢弃。
+```{r}
+# 参数
+set.seed(7)
+sigma = 4
+burn = 1000
+chain.len = 20000
+chain.num = 4
+# x0 = rchisq(4, df=1)
+x0 = c(2, 6, 10, 14)   # initial values
+# 生成四条不同初始值的链
+MCMC.chain = matrix(0, nrow = chain.num, ncol = chain.len)
+for (i in 1:chain.num){
+  MCMC.chain[i, ] = Rchain(sigma, chain.len, x0[i])
+}
+
+psi0 = t(apply(MCMC.chain, 1, cumsum))
+psi = psi0
+for (i in 1:nrow(psi0)){
+  psi[i,] = psi0[i,] / (1:ncol(psi0))
+}
+```
+
+```{r, echo=FALSE}
+# plot
+for (i in 1:chain.num){
+  if(i==1){
+    plot((burn+1):chain.len, psi[i, (burn+1):chain.len], ylim=c(4,6), type="l",
+         xlab='Index', ylab=bquote(phi))
+  }else{
+    lines(psi[i, (burn+1):chain.len], col=i)
+  }
+}
+
+rhat = rep(0, chain.len)
+for (j in (burn+1):chain.len){
+  rhat[j] = Gelman.Rubin(psi[,1:j])
+}
+plot(rhat[(burn+1):chain.len], type="l", xlab="", ylab="R")
+abline(h=1.2, lty=2)
+```
+
+4条链在$\hat R<1.2$的准则下均收敛到目标分布。需要说明的是，Metropolis-Hastings方法使用卡方分布生成初始值，但由于该方法有随机性，可能生成较为接近的初始值，因此本题的解答中，人为给定了四个差别较大的初始值，以凸显链的生成过程的差别。
+
+接下来，使用coda包实现上述过程。以`obj`作为mcmc变量，输入到函数`gelman.plot`中，图片展示的是 Gelman-Rubin 收缩因子随着迭代次数的增加而演变的规律。由图像可知，MCMC链的收敛效果较好，这一结论与第一问的结论一致。
+
+```{r,echo=FALSE}
+library(coda)
+```
+
+```{r}
+obj = mcmc.list(mcmc(MCMC.chain[1, ]), mcmc(MCMC.chain[2, ]), 
+                 mcmc(MCMC.chain[3, ]), mcmc(MCMC.chain[4, ]))
+gelman.diag(obj)
+gelman.plot(obj)
+```
+
+
+# HW8
+
+## 第一题
+
+*问题描述：*设$X_1,...,X_n\sim^{iid}~Exp(\lambda)$。由于某种原因，只知道$X_i$落在某个区间$(u_i,v_i)$，其中$u_i<v_i$是两个非随机的已知常数。这种数据成为区间删失数据。
+
+（1）试分别直接极大化观测数据的似然函数与采用EM算法求解$\lambda$的MLE。证明EM算法收敛于观测数据的MLE，且收敛有线性速度。
+
+（2）设$(u_i,v_i),~i=1,...n(=10)$的观测值为$(11,12),~(8,9),...$（略）。试分别编程实现上述两种算法以得到$\lambda$的MLE的数值解。
+
+*思路：*根据区间删失数据的似然函数，首先极大化似然函数，求解MLE；然后再写出完全数据的似然函数，用EM算法求解$\lambda$。将MLE与EM算法求出的两式进行对比，找到二者之间的关系并利用它证明线性收敛。
+
+
+*解：*（1）由于$Exp(\lambda)$的分布函数为$F(x) = 1-e^{-\lambda x}$，因此区间删失数据的对数似然函数为：
+$$l_o(\lambda) = \ln[\prod_{i=1}^nP_{\lambda}(u_i\leq X_i\leq v_i)]$$
+$$= \sum_{i=1}^n\ln(e^{-\lambda u_i}-e^{-\lambda v_i}).$$
+令上式对$\lambda$的偏导为0，即$\frac{\partial l_o(\lambda)}{\partial \lambda}=0$，解得：
+$$\sum_{i=1}^n\dfrac{-u_ie^{-\lambda (u_i-v_i)}+v_i}{e^{-\lambda (u_i-v_i)}-1}=0.$$
+$\lambda$的MLE为上式的数值解（无法求出解析解）。
+
+EM算法中，我们首先给出完全数据的似然函数：
+$$l_c(\lambda) = \ln[\prod_{i=1}^nf_{\lambda}(X_i)]$$
+$$ = n\ln\lambda -\sum_{i=1}^n\lambda X_i.$$
+E-Step：第$j+1$步的时候，以观测到的数据$u_i,v_i$和第$j$步求出的$\hat\lambda^{(j)}$作为条件，计算完全数据的似然函数的期望。
+$$Q(\lambda|\hat\lambda^{(j)})=E_{X|u_i, v_i, \hat\lambda^{(j)}}[l_c(\lambda)]$$
+$$=n\ln\lambda-\lambda\sum_{i=1}^n E[x_i|u_i, v_i, \hat\lambda^{(j)}]$$
+其中，$E[x_i|u_i, v_i, \hat\lambda^{(j)}]$的求解如下（事实上，在线性收敛性的证明过程中我们发现，积分式还可以进一步化简）：
+$$E[x_i|u_i, v_i, \hat\lambda^{(j)}] = \int_{u_i}^{v_i}\dfrac{x\hat\lambda^{(j)}e^{-\hat\lambda^{(j)}x}}{e^{-\hat\lambda^{(j)}u_i}-e^{-\hat\lambda^{(j)}v_i}}dx.$$
+
+M-Step：对$Q(\lambda|\hat\lambda^{(j)})$求导，并令导数为0：
+$$\dfrac{\partial Q(\lambda|\hat\lambda^{(j)})}{\partial \lambda} = \dfrac{n}{\lambda} - \sum_{i=1}^nE[x_i|u_i, v_i, \hat\lambda^{(j)}].$$
+
+$\hat\lambda^{(j+1)}$即导数为0时的解：
+$$\hat\lambda^{(j+1)} = \dfrac{n}{\sum_{i=1}^nE[x_i|u_i, v_i, \hat\lambda^{(j)}]}.$$
+
+
+下面证明EM算法收敛于观测数据的MLE，且收敛有线性速度：
+
+将EM算法的迭代式进行化简，有$\hat\lambda^{(j+1)} = f(\hat\lambda^{(j)})$的关系式，且该式与MLE方法中$\hat\lambda_{MLE}$的表达式有关：
+$$\hat\lambda^{(j+1)} = \dfrac{n}{\sum_{i=1}^n\int_{u_i}^{v_i}\dfrac{x\hat\lambda^{(j)}e^{-\hat\lambda^{(j)}x}}{e^{-\hat\lambda^{(j)}u_i}-e^{-\hat\lambda^{(j)}v_i}}dx}$$
+$$ = \dfrac{1}{\dfrac{1}{n}\sum_{i=1}^n \dfrac{u_ie^{-\hat\lambda^{(j)}u_i}-v_ie^{-\hat\lambda^{(j)}v_i}}{e^{-\hat\lambda^{(j)}u_i}-e^{-\hat\lambda^{(j)}v_i}}+\dfrac{1}{\hat\lambda^{(j)}}}\triangleq f(\hat\lambda^{(j)}).$$
+
+由于$\hat\lambda_{MLE}$使得分母中的$\sum_{i=1}^n \dfrac{u_ie^{-\hat\lambda^{(j)}u_i}-v_ie^{-\hat\lambda^{(j)}v_i}}{e^{-\hat\lambda^{(j)}u_i}-e^{-\hat\lambda^{(j)}v_i}}$为0，因此有：$\hat\lambda_{MLE}=f(\hat\lambda_{MLE}).$
+
+接下来，对$f(\lambda)$求导，为简化记号，记$m(\lambda)=\sum_{i=1}^n \dfrac{u_ie^{-\lambda u_i}-v_ie^{-\lambda v_i}}{e^{-\lambda u_i}-e^{-\lambda v_i}}$：
+$$f'(\lambda) = -\dfrac{1}{(\dfrac{1}{n}m(\lambda)+\dfrac{1}{\lambda})^2}(\dfrac{1}{n}m'(\lambda)-\dfrac{1}{\lambda^2}).$$
+将$\hat\lambda_{MLE}$代入并化简：
+$$f'(\hat\lambda_{MLE}) = 1-\dfrac{\lambda^2}{n}m'(\hat\lambda_{MLE}),$$
+$$ = 1-\dfrac{1}{n}\sum_{i=1}^n \dfrac{\lambda^2(u_i-v_i)^2}{e^{\lambda(u_i-v_i)}+e^{-\lambda(u_i-v_i)}-2}$$
+利用$e^x=1+x+\dfrac{x^2}{2}+o(x^2)$，$e^{-x}=1-x+\dfrac{x^2}{2}+o(x^2)$，对上式第二项的分母进行Taylor展开：
+$$e^{\lambda(u_i-v_i)}+e^{-\lambda(u_i-v_i)}-2=(1+\lambda(u_i-v_i)+\dfrac{\lambda^2(u_i-v_i)^2}{2}+o(\lambda^2(u_i-v_i)^2)$$
+$$+ (1-\lambda(u_i-v_i)+\dfrac{\lambda^2(u_i-v_i)^2}{2}+o(\lambda^2(u_i-v_i)^2)-2$$
+$$= \lambda^2(u_i-v_i)^2 + o(\lambda^2(u_i-v_i)^2).$$
+因此有$0<f'(\hat\lambda_{MLE})<1$。
+
+又由于$f''(\hat\lambda_{MLE})$存在连续，因此$\forall~0<k<1,~\exists~\sigma>0$，使得$\lambda\in(\hat\lambda_{MLE}-\sigma,\hat\lambda_{MLE}+\sigma)$内有$|f'(\lambda)|<k$，进而对$a,b\in(\hat\lambda_{MLE}-\sigma,\hat\lambda_{MLE}+\sigma)$，有：
+$$|f(a)-f(b)|=|f'(c)||a-b|< k|a-b|,~c\in(a,b),$$
+由不动点引理，在$(\hat\lambda_{MLE}-\sigma,\hat\lambda_{MLE}+\sigma)$内存在$f(\lambda)$唯一的不动点，而之前已解得$\hat\lambda_{MLE}=f(\hat\lambda_{MLE})$，
+即$\hat\lambda_{MLE}$是$f(\cdot)$的不动点。
+
+再由$0<f'(\hat\lambda_{MLE})<1$的结论知，EM算法以线性速度收敛于MLE。
+
+（2）给定$(u_i,v_i),~i=1,...n(=10)$的观测值的情况下。我们首先极大化似然函数得到$\lambda$的MLE的数值解。
+
+```{r}
+ui = c(11, 8, 27, 13, 16, 0, 23, 10, 24, 2)
+vi = c(12, 9, 28, 14, 17, 1, 24, 11, 25, 3)
+partial.l = function(lambda){
+  equation = (-ui*exp(-lambda*(ui-vi))+vi) / (exp(-lambda*(ui-vi))-1)
+  return(sum(equation))
+}
+cat("Lambda estimated by MLE:", uniroot(partial.l, lower = 0.01, upper = 3)$root)
+```
+
+然后根据EM算法求解$\lambda$。
+
+```{r}
+# E-Step 的条件期望的被积函数
+integrand = function(x, lambda, uk, vk) {
+  numerator = x * lambda * exp(-lambda * x)
+  denominator = exp(-lambda * uk) - exp(-lambda * vk)
+  return(numerator / denominator)
+}
+
+# EM算法
+em_algorithm = function(lambda_initial, num_iterations, eps, u, v) {
+  n = length(u)
+  lambda = lambda_initial
+  pre_lambda = lambda_initial
+  # 迭代
+  for (iteration in 1:num_iterations) {
+    E = numeric(n)
+    for (k in 1:n) {
+      E[k] = integrate(integrand, lower = u[k], upper = v[k], 
+                       lambda = lambda, uk = u[k], vk = v[k])$value
+    }
+    lambda = n/sum(E)
+    # whether to stop
+    if (abs(lambda - pre_lambda) < eps) {
+      break
+    }
+    pre_lambda = lambda
+  }
+  return(lambda)
+}
+
+lambda_initial = 0.01
+num_iterations = 1e4
+eps = 1e-5
+em_lambda = em_algorithm(lambda_initial, num_iterations, eps, u = ui, v = vi)
+cat("Lambda estimated by EM algorithm:", em_lambda)
+```
+
+通过数值求解的结果可知，MLE与EM算法有着非常相近的求解结果，这一现象支持第一小题的结论，即EM算法收敛于观测数据的MLE。
+
+
+
+## 第二题
+
+*问题描述：*在Morra game中，如果从payoff matrix（收益矩阵）的每一个元素中减去一个常数，或者将收益矩阵的每个元素乘一个正常数，则最优策略集不会改变。然而，单纯形法可能终止于不同的基本可行点（也是最优的）。计算`B <- A + 2`，找到game B的解，验证其为原game A的极值点(11.12)-(11.15)之一，并求出game A和game B的值。
+
+*思路：*在Morra game中，第一个玩家的目标是要最大化他的收益，相应的最优策略为$x^*$；第二个玩家的目标是要最小化他的损失，相应的最优策略为$y^*$。game的期望payoff是$v = x^{*^T}Ay^*$，用simplex method进行最优化问题（最大化$v$、最小化$v$）的求解。
+
+*解：*我们调用`simplex()`函数分别求解最大化$v$、最小化$v的最优化问题，参数`maxi`分别设置为`TRUE`和`FALSE`。将这一步骤封装在自己编写的函数`solve.game`中。
+
+```{r}
+library(boot)
+solve.game = function(payoff.matrix){
+  # preprocess
+  min.A = min(A); A = A - min.A; max.A = max(A); A = A / max(A)
+  m = nrow(A)
+  n = ncol(A)
+  iter = n^3
+  
+  # max v
+  # objective function
+  a = c(rep(0, m), 1)
+  # constraint 1 >=，但simplex函数中的A1是<=，所以这里A1前有负号
+  A1 = -cbind(t(A), rep(-1, n)) 
+  b1 = rep(0, n)
+  # constraint 2 sum(x)=1
+  A3 = t(as.matrix(c(rep(1, m), 0)))
+  b3 = 1
+  sx = simplex(a=a, A1=A1, b1=b1, A3=A3, b3=b3, maxi=TRUE, n.iter=iter)
+  
+  # min v
+  # objective function
+  a = c(rep(0, n), 1)
+  # constraint 1 <=
+  A1 = cbind(A, rep(-1, m))
+  b1 = rep(0, m)
+  # constraint 2 sum(y)=1
+  A3 = t(as.matrix(c(rep(1, n), 0)))
+  b3 = 1
+  sy = simplex(a=a, A1=A1, b1=b1, A3=A3, b3=b3,
+maxi=FALSE, n.iter=iter)
+  solution.list = list("A" = A * max.A + min.A,
+                "x" = sx$soln[1:m],
+                "y" = sy$soln[1:n],
+                "v" = sx$soln[m+1] * max.A + min.A)
+  solution.list
+}
+```
+
+我们给定收益矩阵A的值，并计算矩阵B，调用`solve.game`函数求出game B的解。从结果可以看出，与题目所说一致，从payoff matrix的每一个元素中减去常数2，最优策略集并没有发生改变。在9个策略中，采用第3个策略可以获得最大的收益（或最小的损失）。此外，经过验证，game B的解为原game A的极值点之一。
+
+```{r}
+# payoff matrix
+A <- matrix(c( 0,-2,-2,3,0,0,4,0,0,
+2,0,0,0,-3,-3,4,0,0,
+2,0,0,3,0,0,0,-4,-4,
+-3,0,-3,0,4,0,0,5,0,
+0,3,0,-4,0,-4,0,5,0,
+0,3,0,0,4,0,-5,0,-5,
+-4,-4,0,0,0,5,0,0,6,
+0,0,4,-5,-5,0,0,0,6,
+0,0,4,0,0,5,-6,-6,0), 9, 9)
+B <- A + 2
+# 计算A的解和B的解
+round(cbind(solve.game(A)$x, solve.game(A)$y),7)
+round(cbind(solve.game(B)$x, solve.game(B)$y),7)
+# 验证game B的解是否为game A的极值点之一
+epointA = round(c(0, 0, 25/61, 0, 20/61, 0, 16/61, 0, 0), 7)
+epointA == round(solve.game(B)$x, 7)
+epointA == round(solve.game(B)$y, 7)
+```
+最后，我们求出game A和game B的value，均为0。这是由于Morra Game是zero sum的Game。
+```{r}
+solve.game(A)$v
+solve.game(B)$v 
+```
+
+
+# HW9
+
+## 第一题
+
+*问题描述：*为什么要用`unlist()`将list转化为atomic vector？为什么`as.vector()`不适用？
+
+*解答：*原因如下：
+
+- `unlist()`可以将具有多种数据类型的list转换为一个数据类型一致的向量（按照上课说的就高原则，例如int和chr类型的元素全部转化为chr类型）。
+
+- `as.vector()`主要用于改变向量的类别，它无法将列表转换为扁平化的结构。尤其是在列表为嵌套结构的时候，对数据分析的影响很大。事实上，list是否为嵌套形式，`as.vector(list)`的结果还是list。
+
+因此，在将list转换为原子向量时，`unlist()`函数更适用。
+
+举个例子：
+```{r}
+list1 = list('a', 2, 5, 'd')
+unlist(list1)
+as.vector(list1)
+```
+
+
+## 第二题
+
+*问题描述：*`dim()`应用于vector的时候返回什么？
+
+*解答：*返回NULL，这是因为vector是一维的，与矩阵或数组不同，它没有维度信息。正确用法是使用`length()`。
+
+举个例子：
+```{r}
+v = list(1, 2, 5, 7)
+dim(v)
+length(v)
+```
+
+
+
+## 第三题
+
+*问题描述：*如果`is.matrix(x)`为`TRUE`，那么`is.array(x)`返回什么？
+
+*解答：*
+`is.array(x)`也返回`TRUE`。因为matrix是array的一种特殊形式（矩阵是二维情况下的数组）。
+
+举个例子：
+```{r}
+m = matrix(c(1, 2, 5, 7), 2, 2)
+is.matrix(m)
+is.array(m)
+```
+
+## 第四题
+
+*问题描述：*`as.matrix()`应用于一个列类型不同的data frame会发生什么？
+
+*解答：*data frame会被转换为一个矩阵，并且所有列会被转换为相同的数据类型。转换的原则为：
+
+logical < integer < double < character < list
+
+举个例子：
+```{r}
+df <- data.frame(
+  col1 = c("a", "b", "c"),
+  col2 = c(1, 2, 8),
+  col3 = c(TRUE, TRUE, FALSE),
+  stringsAsFactors = FALSE
+)
+cat('type of column 1:', typeof(df$col1), '\n')
+cat('type of column 2:', typeof(df$col2), '\n')
+cat('type of column 3:', typeof(df$col3), '\n')
+
+typeof(as.matrix(df))
+```
+
+## 第五题
+
+*问题描述：*会有0行的data frame吗？0列呢？
+
+*解答：*有0行0列的data frame，但事实上，列是data frame的基本组成部分，0列的data frame没有任何意义。
+
+举个例子：
+```{r}
+df = data.frame()
+ncol(df)
+nrow(df)
+```
+
+
+
+## 第六题
+
+*问题描述：*下面的函数是对vector进行标准化，使之在[0,
+1]之间，你将会怎么把它应用到data frame的每一列？又怎么把它应用到data frame的每一个数值型列？
+```{r}
+scale01 <- function(x) {
+  rng <- range(x, na.rm = TRUE)
+  (x - rng[1]) / (rng[2] - rng[1])
+}
+```
+
+*解答：*
+注意到`scale01()`可以处理含有缺失值的数据框，因此我们首先生成一个包含NA的数值型dataframe。用apply族函数中的`sapply()`，就可以把它应用到data frame的每一列：
+```{r}
+df1 = data.frame(
+  col1 = c(1, 2, NA, 4),
+  col2 = c(5, NA, 7, 8),
+  col3 = c(NA, 10, 11, 12)
+)
+
+lapply(df1, scale01)
+```
+接下来，我们生成一个混合型的data frame。为了对每一个数值型列进行标准化，我们首先要识别出列的类型。从结果可以看出，`vapply`函数正确识别出了数值型列是第一列和第三列，并计算出了元素的标准化值。
+```{r}
+df2 = data.frame(
+  col1 = seq(1,4,1),
+  col2 = rep(TRUE, 4),
+  col3 = seq(9,15,2),
+  col4 = rep('a', 4),
+  stringsAsFactors = FALSE
+)
+numeric.idx = vapply(df2, is.numeric, FUN.VALUE=logical(1))
+lapply(df2[, numeric.idx], scale01)
+```
+
+
+
+
+## 第七题
+
+*问题描述：*用`vapply()`完成以下操作：
+
+a) 计算一个数值型data frame的每一列的标准差standard deviation.
+
+b) 计算一个混合型data frame的每一个数值型列的标准差standard deviation.(Hint: use `vapply()` twice.)
+
+*解答：*
+a) 构建一个数值型data frame，并用`vapply()`计算每一列的标准差standard deviation，注意需要指定默认值`FUN.VALUE`。
+
+```{r}
+df1 = data.frame(
+  col1 = seq(1,4,1),
+  col2 = seq(5,8,1),
+  col3 = seq(9,15,2)
+)
+vapply(df1, sd, FUN.VALUE=0)
+```
+
+b) 构建一个混合型data frame，先用`vapply()`识别每一列的类型，如果是数值型列，则记录列的下标，然后再用一次`vapply()`计算数值型列的标准差standard deviation，同样地，需要指定默认值`FUN.VALUE`。
+```{r}
+df2 = data.frame(
+  col1 = seq(1,4,1),
+  col2 = rep(TRUE, 4),
+  col3 = seq(9,15,2),
+  col4 = rep('a', 4),
+  stringsAsFactors = FALSE
+)
+numeric.idx = vapply(df2, is.numeric, FUN.VALUE=logical(1))
+vapply(df2[, numeric.idx], sd, FUN.VALUE=0)
+```
+
+
+
+## 第八题
+
+*问题描述：*考虑一个二元密度函数：
+$$f(x,y) \propto C_n^xy^{x+a+1}(1-y)^{n-x+b-1},~x=0,1,...,n,~0\leq y\leq 1.$$
+对于固定的$a,b,n$，边际分布分别为$B(n,y)$和$Beta(x+a,n-x+b)$。用Gibbs sampler生成一条具有目标联合密度的链。
+
+- 写一个R函数；
+
+- 写一个Rcpp函数；
+
+- 用函数`microbenchmark`来比较两个函数的运行时间。
+
+*解答：*Gibbs算法的流程如下所示，在每一轮迭代中：
+
+1）设$(x,y)=(X_{t-1},Y_{t-1})$，
+
+2）从$f(X|y)$生成样本$X^*_t$，
+
+3）令$x_t = X^*_t$，
+
+4）从$f(Y|x)$生成样本$Y^*_t$，
+
+5）设$(X_{t},Y_{t})=(X^*_t,Y^*_t)$。
+
+根据题设条件，$f(X|y)$和$f(Y|x)$分别为$B(n,y)$和$Beta(x+a,n-x+b)$。将上述流程分别写成R函数和Rcpp函数。
+
+```{r}
+gibbsR = function(N, burn, a, b, n, seed){
+  # N: length of chain
+  # burn: burn-in length
+  # a, b, n: parameter of density
+  # seed: random seed
+  set.seed(seed)
+  data = matrix(0, N, 2)
+  data[1, ] = c(n-1, 1/2)
+  for (i in 2:N) {
+    y = data[i-1, 2]
+    data[i, 1] = rbinom(1, n, y)
+    x = data[i, 1]
+    data[i, 2] = rbeta(1, x+a, n-x+b)
+  }
+  chain = data[(burn+1):N,]
+  return(chain)
+}
+```
+
+```{Rcpp}
+#include <Rcpp.h>
+using namespace Rcpp;
+
+// [[Rcpp::export]]
+NumericMatrix gibbsCpp(int N, int burn, double a, double b, int n) {
+  // N: length of chain
+  // burn: burn-in length
+  // a, b, n: parameter of density
+  // seed: random seed
+  RNGScope scope;  // Initialize random number generator
+  
+  NumericMatrix data(N, 2);
+  data(0, 0) = n - 1;
+  data(0, 1) = 0.5;
+  
+  for (int i = 1; i < N; i++) {
+    double y = data(i - 1, 1);
+    data(i, 0) = R::rbinom(n, y);
+    double x = data(i, 0);
+    data(i, 1) = R::rbeta(x+a, n-x+b);
+  }
+  
+  NumericMatrix chain = data(Range(burn, N - 1), _);
+  return chain;
+}
+```
+
+在Rcpp函数中，需要注意的是，不需要指定随机种子。接下来，我们以样本量5000，预烧样本量1000，a=2, b=3,  n=9作为指定的参数输入函数。根据`x`和`y`的取值范围，MCMC链的初始值设定为`(n-1, 0.5)`。
+
+```{r}
+library(microbenchmark)
+library(Rcpp)
+time = microbenchmark(timeR=gibbsR(5000, 1000, 2, 3, 9, 12345), 
+                      timeCpp = gibbsCpp(5000, 1000, 2, 3, 9))
+summary(time)[,c(1,3,5,6)]
+```
+输出的结果表格展示了两个函数执行时间的分布。第一行是R函数运行时间的25%分位数、中位数、75%分位数；第二行是Rcpp函数运行时间的25%分位数、中位数、75%分位数。可以看出Rcpp函数运行时间比R函数要短得多。

@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Hanlu Zhang" />
+
+<meta name="date" content="2023-12-04" />
+
+<title>Usage of Function</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Usage of Function</h1>
+<h4 class="author">Hanlu Zhang</h4>
+<h4 class="date">2023-12-04</h4>
+
+
+
+<div id="overview" class="section level2">
+<h2>Overview</h2>
+<p><strong>PageRank</strong> is an R package designed to facilitate the
+implementation of three different PageRank algorithms. The package was
+developed as part of the ‘Statistical Computing’ course.</p>
+<p>The package provides four functions. The first function is
+<em>PromC</em>, which calculates probability matrix in Rcpp. The second
+function is <em>pagerank</em>. It calculates the pagerank of the nodes
+in directed unweighted graph. The third function is <em>itemrank</em>.
+It calculates the pagerank of the nodes in directed weighted graph,
+where the rank called itemrank. The fourth function is
+<em>personpagerank</em>. It calculates the rank values from a root node
+with outdegree to other nodes in a bipartite graph.</p>
+</div>
+<div id="introduction-of-pagerank" class="section level2">
+<h2>Introduction of PageRank</h2>
+<p>PageRank is Google’s proprietary algorithm for measuring the
+importance of a particular web page relative to other pages in the
+search engine’s index. Invented by Larry Page and Sergey Brin in the
+late 1990s, PageRank implements the concept of link value as a ranking
+factor.</p>
+<p>PageRank allows links to “vote”. A page’s “votes” are determined by
+the importance of all the pages linking to it, and a hyperlink to a page
+is equivalent to a vote for that page. A page’s PageRank is obtained by
+a recursive algorithm from the importance of all the pages linked to it
+(incoming pages). A page with more incoming links will have a higher
+rank, on the other hand if a page does not have any incoming pages, then
+it has no rank. In a nutshell, a page that is linked to from many
+quality pages must still be a quality page.</p>
+<p>The calculation of PageRank is based on the following two basic
+assumptions, one is the quantity assumption, that is, if a page node
+receives a greater number of incoming links from other web pages
+pointing to it, then the more important this page is; the second is the
+quality assumption, that is, the incoming links pointing to page A are
+of different qualities, and a high quality page will pass more weight
+through the link to the other pages, so the more the higher the quality
+of the page pointing to page A, the more important the page A is. So the
+more quality pages point to page A, the more important page A is.</p>
+</div>
+<div id="introduction-of-dataset-email" class="section level2">
+<h2>Introduction of dataset <em>email</em></h2>
+<p>A dataset of the email information of Hillary Clinton and other
+politicians in the Emailgate scandal. It includes five columns:
+recipient, sender, recipient ID, sender ID and frequency. The last three
+columns of the dataset can be used to calculate the pagerank value of
+the politicians.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(SA23204183)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">data</span>(email)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">head</span>(email)</span></code></pre></div>
+<pre><code>##              from              to fromID toID weight
+## 1   Jake Sullivan Hillary Clinton      1    4    815
+## 2              NA Hillary Clinton      2    4     20
+## 3    Cheryl Mills              ;h      3  190      1
+## 4    Cheryl Mills Hillary Clinton      3    4   1182
+## 5 Hillary Clinton     Huma Abedin      4   10     32
+## 6 Hillary Clinton         russorv      4  191     26</code></pre>
+</div>
+<div id="introduction-of-promc" class="section level2">
+<h2>Introduction of <em>PromC</em></h2>
+<p>To calculate the probability matrix, <em>PromC</em> is a Rcpp
+function. The differences between the R function and the <em>PromC</em>
+are as follows.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">library</span>(microbenchmark)</span></code></pre></div>
+<pre><code>## Warning: package &#39;microbenchmark&#39; was built under R version 4.3.2</code></pre>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>promR <span class="ot">=</span> <span class="cf">function</span>(adjM, d){</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  cs <span class="ot">&lt;-</span> <span class="fu">colSums</span>(adjM)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  cs[cs<span class="sc">==</span><span class="dv">0</span>] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(adjM)</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  delta <span class="ot">&lt;-</span> (<span class="dv">1</span><span class="sc">-</span>d)<span class="sc">/</span>n</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  P <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="fu">nrow</span>(adjM), <span class="fu">ncol</span>(adjM))</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n){</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>    P[i,] <span class="ot">&lt;-</span> delta <span class="sc">+</span> d <span class="sc">*</span> adjM[i,]<span class="sc">/</span>cs</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>  }</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>  <span class="fu">return</span>(P)</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>}</span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>tm1 <span class="ot">&lt;-</span> <span class="fu">microbenchmark</span>(</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>  <span class="at">promC =</span> <span class="fu">PromC</span>(adjM, <span class="at">d =</span> <span class="fl">0.85</span>),</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>  <span class="at">promR =</span> <span class="fu">promR</span>(adjM, <span class="at">d =</span> <span class="fl">0.85</span>)</span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>)</span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="fu">summary</span>(tm1)[,<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">6</span>)])</span></code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="left">expr</th>
+<th align="right">lq</th>
+<th align="right">median</th>
+<th align="right">uq</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">promC</td>
+<td align="right">3.0</td>
+<td align="right">3.2</td>
+<td align="right">3.4</td>
+</tr>
+<tr class="even">
+<td align="left">promR</td>
+<td align="right">7.5</td>
+<td align="right">7.7</td>
+<td align="right">7.9</td>
+</tr>
+</tbody>
+</table>
+<p>The for loop in R is inefficient compared to the C++ function.</p>
+</div>
+<div id="introduction-of-pagerank-1" class="section level2">
+<h2>Introduction of <em>pagerank</em></h2>
+<p>The source R code for <em>pagerank</em> is as follows:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>pagerank <span class="ot">=</span> <span class="cf">function</span>(pages, <span class="at">d =</span> <span class="dv">1</span>){</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="fu">apply</span>(pages[,<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>)],<span class="dv">2</span>,max))</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  A <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>,n,n)</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span> <span class="sc">:</span> <span class="fu">nrow</span>(pages)){</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>    <span class="cf">if</span> (pages[i, <span class="dv">3</span>] <span class="sc">!=</span> <span class="dv">1</span>) {</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>      <span class="fu">print</span>(<span class="st">&#39;Error: pagerank() is a function for weight = 1.</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="st">            Please use function itemrank() for Weight != 1&#39;</span>)</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>      A[pages[i, <span class="dv">2</span>], pages[i, <span class="dv">1</span>]] <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>    }</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>  }</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>  adjM <span class="ot">=</span> A</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>  </span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>  proM <span class="ot">=</span> <span class="fu">PromC</span>(adjM, d)</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>  </span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>  eigenMatrix <span class="ot">&lt;-</span> <span class="cf">function</span>(proM){</span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>    n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(proM)</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>    x <span class="ot">&lt;-</span> <span class="fu">Re</span>(<span class="fu">eigen</span>(proM)<span class="sc">$</span>vectors[,<span class="dv">1</span>])</span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>    <span class="fu">return</span>(x<span class="sc">/</span><span class="fu">sum</span>(x))</span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>  }</span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>  rank <span class="ot">=</span> <span class="fu">eigenMatrix</span>(proM)</span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a>  </span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>  <span class="fu">return</span>(rank)</span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a>}</span></code></pre></div>
+<p>The the R code includes three steps: computing the adjacency matrix,
+transition probability matrix, and solving for eigenvectors to calculate
+rank values.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">library</span>(igraph)</span></code></pre></div>
+<pre><code>## Warning: package &#39;igraph&#39; was built under R version 4.3.2</code></pre>
+<pre><code>## 
+## Attaching package: &#39;igraph&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:stats&#39;:
+## 
+##     decompose, spectrum</code></pre>
+<pre><code>## The following object is masked from &#39;package:base&#39;:
+## 
+##     union</code></pre>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># prepare the data</span></span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>edges <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>  <span class="at">from =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>),</span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>  <span class="at">to =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">3</span>, <span class="dv">1</span>),</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>  <span class="at">weight =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a>)</span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>graph <span class="ot">&lt;-</span> <span class="fu">graph_from_data_frame</span>(edges, <span class="at">directed =</span> <span class="cn">TRUE</span>, <span class="at">vertices =</span> <span class="cn">NULL</span>)</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a><span class="fu">E</span>(graph)<span class="sc">$</span>weight <span class="ot">&lt;-</span> edges<span class="sc">$</span>weight</span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a><span class="co"># calculate</span></span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>r1<span class="fl">.0</span> <span class="ot">&lt;-</span> <span class="fu">page_rank</span>(graph, <span class="at">weights =</span> <span class="cn">NA</span>)<span class="sc">$</span>vector</span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a>r1<span class="fl">.1</span> <span class="ot">=</span> <span class="fu">pagerank</span>(edges, <span class="at">d =</span> <span class="fl">0.85</span>)</span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a><span class="fu">print</span>(r1<span class="fl">.0</span>)</span></code></pre></div>
+<pre><code>##         1         2         3 
+## 0.3877897 0.2148106 0.3973997</code></pre>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="fu">print</span>(r1<span class="fl">.1</span>)</span></code></pre></div>
+<pre><code>## [1] 0.3877897 0.2148106 0.3973997</code></pre>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co"># compare the effiency</span></span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>tm2 <span class="ot">&lt;-</span> <span class="fu">microbenchmark</span>(</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>  <span class="at">r1.0 =</span> <span class="fu">page_rank</span>(graph, <span class="at">weights =</span> <span class="cn">NA</span>),</span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>  <span class="at">r1.1 =</span> <span class="fu">pagerank</span>(edges, <span class="at">d =</span> <span class="fl">0.85</span>)</span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>)</span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="fu">summary</span>(tm2)[,<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">6</span>)])</span></code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="left">expr</th>
+<th align="right">lq</th>
+<th align="right">median</th>
+<th align="right">uq</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">r1.0</td>
+<td align="right">87.65</td>
+<td align="right">107.70</td>
+<td align="right">117.1</td>
+</tr>
+<tr class="even">
+<td align="left">r1.1</td>
+<td align="right">295.65</td>
+<td align="right">313.05</td>
+<td align="right">332.6</td>
+</tr>
+</tbody>
+</table>
+<p>The results are exactly the same, however, <em>pagerank</em> is
+slightly less efficient than <em>page_rank</em>. It is caused by the
+data types (called <em>graph</em>) and algorithms of the
+<em>page_rank</em>.</p>
+</div>
+<div id="introduction-of-itemrank" class="section level2">
+<h2>Introduction of <em>itemrank</em></h2>
+<p>The source R code for <em>itemrank</em> is as follows:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a>itemrank <span class="ot">=</span> <span class="cf">function</span>(pages, <span class="at">d =</span> <span class="dv">1</span>){</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="fu">apply</span>(pages[,<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>)],<span class="dv">2</span>,max))</span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>  A <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>,n,n)</span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span> <span class="sc">:</span> <span class="fu">nrow</span>(pages)){</span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a>    A[pages[i, <span class="dv">2</span>], pages[i, <span class="dv">1</span>]] <span class="ot">&lt;-</span> pages[i, <span class="dv">3</span>]</span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>  }</span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">all</span>(pages[, <span class="dv">3</span>]<span class="sc">==</span><span class="dv">1</span>)){</span>
+<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">&#39;Note: All weight = 1, but itemrank() is a function for Weight != 1.</span></span>
+<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a><span class="st">          A better choice is function pagerank().&#39;</span>)</span>
+<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a>  }</span>
+<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a>  adjM <span class="ot">=</span> A</span>
+<span id="cb17-12"><a href="#cb17-12" tabindex="-1"></a>  </span>
+<span id="cb17-13"><a href="#cb17-13" tabindex="-1"></a>  proM <span class="ot">=</span> <span class="fu">PromC</span>(adjM, d)</span>
+<span id="cb17-14"><a href="#cb17-14" tabindex="-1"></a>  </span>
+<span id="cb17-15"><a href="#cb17-15" tabindex="-1"></a>  eigenMatrix <span class="ot">&lt;-</span> <span class="cf">function</span>(proM){</span>
+<span id="cb17-16"><a href="#cb17-16" tabindex="-1"></a>    n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(proM)</span>
+<span id="cb17-17"><a href="#cb17-17" tabindex="-1"></a>    x <span class="ot">&lt;-</span> <span class="fu">Re</span>(<span class="fu">eigen</span>(proM)<span class="sc">$</span>vectors[,<span class="dv">1</span>])</span>
+<span id="cb17-18"><a href="#cb17-18" tabindex="-1"></a>    <span class="fu">return</span>(x<span class="sc">/</span><span class="fu">sum</span>(x))</span>
+<span id="cb17-19"><a href="#cb17-19" tabindex="-1"></a>  }</span>
+<span id="cb17-20"><a href="#cb17-20" tabindex="-1"></a>  rank <span class="ot">=</span> <span class="fu">eigenMatrix</span>(proM)</span>
+<span id="cb17-21"><a href="#cb17-21" tabindex="-1"></a>  </span>
+<span id="cb17-22"><a href="#cb17-22" tabindex="-1"></a>  <span class="fu">return</span>(rank)</span>
+<span id="cb17-23"><a href="#cb17-23" tabindex="-1"></a>}</span></code></pre></div>
+<p>Use <em>itemrank</em> to calculate the rank of all nodes in the email
+dataset.</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a>ir <span class="ot">=</span> <span class="fu">itemrank</span>(email[,<span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>)], <span class="at">d =</span> <span class="fl">0.85</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a><span class="fu">head</span>(ir)</span></code></pre></div>
+<pre><code>## [1] 0.006263482 0.140586026 0.010639294 0.345965735 0.001125404 0.000618960</code></pre>
+</div>
+<div id="introduction-of-personpagerank" class="section level2">
+<h2>Introduction of <em>personpagerank</em></h2>
+<p>The source R code for <em>personpagerank</em> is as follows:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>personpagerank <span class="ot">&lt;-</span> <span class="cf">function</span>(pages, <span class="at">d =</span> <span class="dv">1</span>, root, <span class="at">is_using_out =</span> <span class="cn">FALSE</span>) {</span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="fu">apply</span>(pages[,<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>)],<span class="dv">2</span>,max))</span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a>  nodes <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span>n)</span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a>  A <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="dv">0</span>,n,n)</span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span> <span class="sc">:</span> <span class="fu">nrow</span>(pages)){</span>
+<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a>    A[pages[i, <span class="dv">2</span>], pages[i, <span class="dv">1</span>]] <span class="ot">&lt;-</span> pages[i, <span class="dv">3</span>]</span>
+<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a>  }</span>
+<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a>  adjM <span class="ot">=</span> A</span>
+<span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a>  <span class="cf">if</span>(is_using_out){</span>
+<span id="cb20-10"><a href="#cb20-10" tabindex="-1"></a>    degree <span class="ot">&lt;-</span> <span class="cf">function</span>(adjM, nodes) {</span>
+<span id="cb20-11"><a href="#cb20-11" tabindex="-1"></a>      degrees <span class="ot">=</span> <span class="fu">numeric</span>(<span class="fu">max</span>(pages))</span>
+<span id="cb20-12"><a href="#cb20-12" tabindex="-1"></a>      <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">unique</span>(pages[,<span class="dv">1</span>])) {</span>
+<span id="cb20-13"><a href="#cb20-13" tabindex="-1"></a>        degrees[i] <span class="ot">&lt;-</span> <span class="fu">sum</span>(adjM[ ,i])</span>
+<span id="cb20-14"><a href="#cb20-14" tabindex="-1"></a>      }</span>
+<span id="cb20-15"><a href="#cb20-15" tabindex="-1"></a>      <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">unique</span>(pages[,<span class="dv">2</span>])) {</span>
+<span id="cb20-16"><a href="#cb20-16" tabindex="-1"></a>        degrees[i] <span class="ot">&lt;-</span> <span class="fl">10e6</span></span>
+<span id="cb20-17"><a href="#cb20-17" tabindex="-1"></a>      }</span>
+<span id="cb20-18"><a href="#cb20-18" tabindex="-1"></a>      <span class="fu">return</span>(degrees)</span>
+<span id="cb20-19"><a href="#cb20-19" tabindex="-1"></a>    }</span>
+<span id="cb20-20"><a href="#cb20-20" tabindex="-1"></a>    degrees <span class="ot">&lt;-</span> <span class="dv">1</span><span class="sc">/</span><span class="fu">degree</span>(adjM, nodes)</span>
+<span id="cb20-21"><a href="#cb20-21" tabindex="-1"></a>    adjM <span class="ot">&lt;-</span> <span class="fu">t</span>(<span class="fu">t</span>(adjM) <span class="sc">*</span> degrees) </span>
+<span id="cb20-22"><a href="#cb20-22" tabindex="-1"></a>  }</span>
+<span id="cb20-23"><a href="#cb20-23" tabindex="-1"></a>  matrix <span class="ot">&lt;-</span> adjM</span>
+<span id="cb20-24"><a href="#cb20-24" tabindex="-1"></a>  </span>
+<span id="cb20-25"><a href="#cb20-25" tabindex="-1"></a>  r0 <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">ifelse</span>(nodes <span class="sc">==</span> root, <span class="dv">1</span>, <span class="dv">0</span>), <span class="at">nrow =</span> <span class="fu">length</span>(nodes), <span class="at">ncol =</span> <span class="dv">1</span>)</span>
+<span id="cb20-26"><a href="#cb20-26" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(matrix)</span>
+<span id="cb20-27"><a href="#cb20-27" tabindex="-1"></a>  A <span class="ot">&lt;-</span> <span class="fu">diag</span>(n) <span class="sc">-</span> d <span class="sc">*</span> matrix</span>
+<span id="cb20-28"><a href="#cb20-28" tabindex="-1"></a>  b <span class="ot">&lt;-</span> (<span class="dv">1</span> <span class="sc">-</span> d) <span class="sc">*</span> r0</span>
+<span id="cb20-29"><a href="#cb20-29" tabindex="-1"></a>  r <span class="ot">&lt;-</span> <span class="fu">solve</span>(A, b)</span>
+<span id="cb20-30"><a href="#cb20-30" tabindex="-1"></a>  rank <span class="ot">&lt;-</span> <span class="fu">vector</span>()</span>
+<span id="cb20-31"><a href="#cb20-31" tabindex="-1"></a>  <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n) {</span>
+<span id="cb20-32"><a href="#cb20-32" tabindex="-1"></a>    rank[nodes[j]] <span class="ot">&lt;-</span> r[j, <span class="dv">1</span>]</span>
+<span id="cb20-33"><a href="#cb20-33" tabindex="-1"></a>  }</span>
+<span id="cb20-34"><a href="#cb20-34" tabindex="-1"></a>  <span class="fu">return</span>(rank)</span>
+<span id="cb20-35"><a href="#cb20-35" tabindex="-1"></a>}</span></code></pre></div>
+<p>Use <em>personpagerank</em> to calculate the rank of the node1 in the
+email dataset.</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a>ppr <span class="ot">=</span> <span class="fu">personpagerank</span>(email[,<span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>)], <span class="at">d =</span> <span class="fl">0.85</span>, <span class="at">root =</span> <span class="dv">1</span>, <span class="at">is_using_out =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a><span class="fu">head</span>(ppr)</span></code></pre></div>
+<pre><code>## [1] -1.755832e-02  1.085743e-03 -4.940836e-03 -3.849818e-05  2.410714e-02
+## [6]  0.000000e+00</code></pre>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

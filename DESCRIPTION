@@ -1,0 +1,17 @@
+Package: SA23204183
+Type: Package
+Title: The Page Rank Family Function
+Version: 1.0
+Date: 2023-12-02
+Author: Hanlu Zhang
+Maintainer: Hanlu Zhang <zhanghanlu@mail.ustc.edu.cn>
+Description: Calculates the pagerank values of nodes in the graph.
+License: GPL (>= 2)
+Imports: Rcpp, ggplot2, rpart, rpart.plot, labelled, knitr, bootstrap, boot, DAAG, coda, microbenchmark, igraph
+Suggests: rmarkdown
+VignetteBuilder: knitr
+LinkingTo: Rcpp
+RoxygenNote: 7.2.3
+Encoding: UTF-8
+URL: http://github.com/HanluZhang08/SA23204183
+BugReports: http://github.com/HanluZhang08/SA23204183/issues
